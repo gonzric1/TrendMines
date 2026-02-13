@@ -1,0 +1,36 @@
+# Agent and workflow tools
+.agent/skills
+
+# bv (beads viewer) local config and caches
+.bv/
+
+# Frontend (Node.js/Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.vite/
+
+# Backend (Rails)
+backend/log/*.log
+backend/tmp/*
+backend/storage/*
+backend/.env
+backend/.env.*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
