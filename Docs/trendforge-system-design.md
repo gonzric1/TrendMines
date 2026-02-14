@@ -2,12 +2,12 @@
 
 ## Overview
 
-TrendMines is the command center for your 3D printing product pipeline. It has two interfaces:
+TrendMines is a **trend intelligence and product discovery platform** for your 3D printing business. It focuses on the insight, analysis, and design generation side — production, fulfillment, and printer management are handled externally by the operator. It has two interfaces:
 
-1. **Web Dashboard** — Where you review signals, approve products, monitor performance, and manage your printer fleet
+1. **Web Dashboard** — Where you review signals, evaluate niches, review AI-generated designs, and monitor listing performance
 2. **REST API** — What OpenClaw skills read from and write to, enabling full automation of the scanning/generation pipeline
 
-The dashboard is your **decision-making surface** — everything automated flows into it, and your decisions flow back out through it.
+The dashboard is your **decision-making surface** — everything automated flows into it, and your decisions (what to prototype, what to list) flow back out through it. **Production (printing, fulfillment, Etsy listing creation, Printify) is handled outside the platform.**
 
 ---
 
@@ -39,19 +39,19 @@ flowchart TB
         DASH[Web Dashboard]
     end
 
-    subgraph OUTPUT["Output"]
-        ETSY_SHOP[Etsy Shop]
-        PRINTIFY[Printify\nPOD T-shirts]
-        PRINTERS[20x 3D Printers]
+    subgraph OUTPUT["Output (Human-Driven)"]
+        OPERATOR[Human Operator\nReviews & Decides]
+        ETSY_SHOP[Etsy Shop\nManual listing]
+        PRINTERS[3D Printers\nManual allocation]
     end
 
     DATA_SOURCES --> OPENCLAW
     OPENCLAW <-->|Read/Write| API
     API <--> DB
     DASH <--> API
-    API -->|Create listings| ETSY_SHOP
-    API -->|Submit designs| PRINTIFY
-    DASH -->|Printer allocation| PRINTERS
+    DASH -->|Insights &\ndesign candidates| OPERATOR
+    OPERATOR -->|Creates listings| ETSY_SHOP
+    OPERATOR -->|Allocates printers| PRINTERS
 
     style TRENDFORGE fill:#1a1a2e,color:#fff
     style OPENCLAW fill:#2d6a4f,color:#fff
@@ -71,7 +71,6 @@ erDiagram
     DESIGN ||--o{ PRODUCT : "becomes"
     PRODUCT ||--o{ LISTING : "listed as"
     LISTING ||--o{ METRIC_SNAPSHOT : "tracked by"
-    PRODUCT }o--o{ PRINTER_ASSIGNMENT : "printed by"
 
     SIGNAL {
         uuid id
@@ -161,14 +160,9 @@ erDiagram
         timestamp captured_at
     }
 
-    PRINTER_ASSIGNMENT {
-        uuid id
-        uuid product_id
-        string printer_name
-        int units_allocated
-        string status
-    }
 ```
+
+> **Note:** PrinterAssignment is not modeled in TrendMines. Printer allocation is managed externally by the operator.
 
 ---
 
@@ -319,30 +313,9 @@ GET    /api/listings/leaderboard       # Top performers ranked
 
 ---
 
-### 7. Printer Fleet Manager
+### 7. Decay Monitor
 
-Manage allocation of your 20 printers across active products.
-
-**Features:**
-- Visual grid of all 20 printers: name, current assignment, utilization %, AMS status (for the 6 multicolor printers)
-- Drag-and-drop product assignment to printers
-- Capacity calculator: given a product's print time and batch size, show output per day/week across assigned printers
-- AMS printers highlighted separately — automatically suggested for multicolor products
-- Production queue view: what's currently printing, what's next, estimated completion times
-- Alert when a product is declining but still has high printer allocation
-
-**API endpoints:**
-```
-GET    /api/printers                   # List all printers
-PATCH  /api/printers/:id              # Update assignment, status
-GET    /api/printers/capacity          # Fleet capacity summary
-POST   /api/printers/allocate          # Batch-assign printers to product
-GET    /api/printers/queue             # Current production queue
-```
-
----
-
-### 8. Decay Monitor
+> **Note:** Printer Fleet Manager, capacity calculator, and production queue management are out of scope. The operator manages printers and production externally.
 
 A dedicated view for watching your active products' lifecycles.
 
@@ -350,7 +323,7 @@ A dedicated view for watching your active products' lifecycles.
 - Active products with lifecycle stage indicators: 🚀 `launching` | 📈 `growing` | 🏔️ `plateau` | 📉 `declining` | ⚠️ `urgent`
 - Per-product charts: weekly sales trend, Google Trends data for related keywords, Etsy competitor count over time
 - Auto-generated alerts when decay conditions are met (two consecutive weeks of sales decline, competitor count doubled, Google Trends dropping)
-- Recommended actions: "Reduce from 8 printers to 3", "Begin reallocating to [new product]"
+- Recommended actions: "Consider reducing production", "This niche may be saturated — investigate alternatives"
 - Historical graveyard: retired products with post-mortem data (total revenue, lifespan, peak sales rate)
 
 **API endpoints:**
@@ -363,7 +336,7 @@ GET    /api/products/graveyard         # Retired product history
 
 ---
 
-### 9. Analytics & Insights
+### 8. Analytics & Insights
 
 Aggregate business intelligence across the entire pipeline.
 
@@ -373,8 +346,7 @@ Aggregate business intelligence across the entire pipeline.
 - Hit rate tracking: what % of signals become profitable products? Which sources produce the best signals?
 - Source ROI: which data source (AO3, Reddit, Tumblr, etc.) has led to the most revenue?
 - Niche lifecycle analysis: average lifespan of a trending product, time from signal to first sale
-- Cost tracking: API costs (Gemini, scraping), material costs, Etsy fees, total margin analysis
-- Printify vs. 3D print comparison: revenue and margin by fulfillment method
+- Cost tracking: API costs (Gemini, scraping), Etsy listing fees
 
 **API endpoints:**
 ```
@@ -386,16 +358,13 @@ GET    /api/analytics/costs            # API and material cost tracking
 
 ---
 
-### 10. Settings & Configuration
+### 9. Settings & Configuration
 
 **Features:**
 - **Data source management:** API keys for each source, enable/disable sources, set scan frequencies
 - **Scorecard weights:** Adjust the weights in your candidate scoring formula
 - **Alert thresholds:** Configure when you get notified (e.g., sales decline > X%, fav/view > Y%)
 - **Prompt templates:** Manage and edit the Nano Banana prompt templates for each product type
-- **Printer profiles:** Name, type (standard/AMS), default filament, print speeds
-- **Etsy integration:** OAuth connection to your Etsy shop, listing defaults (shipping, policies)
-- **Printify integration:** API connection for print-on-demand t-shirt fulfillment
 - **OpenClaw webhook URL:** Where to send notifications for your messaging channel
 - **User preferences:** Dashboard theme, notification preferences, timezone
 
@@ -450,9 +419,9 @@ OpenClaw can also receive push notifications from the dashboard:
 POST /openclaw/webhook
 {
   "event": "design_approved",
-  "product_type": "tshirt",
+  "product_type": "magnet",
   "design_id": "uuid",
-  "action": "submit_to_printify"
+  "action": "notify_operator"
 }
 ```
 
@@ -477,9 +446,9 @@ POST /openclaw/webhook
 |-------|-----------|-----------|
 | **Backend / API** | Ruby on Rails | Your primary language. Convention over configuration. Fast to build REST APIs with good ORM. |
 | **Database** | PostgreSQL | JSONB support for flexible schema (raw signal data, source references). Strong with time-series queries for metrics. |
-| **Background jobs** | Sidekiq | For async work: design generation, Etsy listing creation, metric collection |
+| **Background jobs** | Sidekiq | For async work: design generation, metric collection, data source scanning |
 | **Frontend** | Hotwire (Turbo + Stimulus) or React | Hotwire keeps you in Ruby-land. React if you want richer interactivity (design gallery, drag-and-drop kanban). |
-| **File storage** | S3 / Cloudflare R2 | For generated design images, STL files |
+| **File storage** | S3 / Cloudflare R2 | For generated design images |
 | **Hosting** | Fly.io or Railway | Easy Rails deployment. Or your own server if you prefer. |
 | **Caching** | Redis | Sidekiq backend + caching layer for dashboard performance |
 
@@ -502,12 +471,10 @@ Build in this order to get value fastest:
 flowchart LR
     A["Phase 1\n🏗️ Foundation"] --> B["Phase 2\n📊 Intelligence"]
     B --> C["Phase 3\n🎨 Automation"]
-    C --> D["Phase 4\n🏭 Operations"]
 
     style A fill:#e76f51,color:#fff
     style B fill:#f5a623,color:#fff
     style C fill:#4a9eff,color:#fff
-    style D fill:#2d6a4f,color:#fff
 ```
 
 **Phase 1 — Foundation:**
@@ -528,12 +495,7 @@ flowchart LR
 - Design Review Gallery
 - Nano Banana / Gemini API integration
 - Prompt template management
-- Printify integration for POD t-shirts
-- Auto-listing creation
+- Alert notification system
+- Webhook integration for OpenClaw
 
-**Phase 4 — Operations:**
-- Printer Fleet Manager
-- Capacity calculator
-- Production queue
-- Full Etsy API integration (auto-create listings, sync metrics)
-- Alerts + notification system
+> **Out of scope:** Printer fleet management, capacity planning, production queues, Printify integration, auto-listing creation on Etsy. TrendMines is a trend intelligence and design candidate platform — the operator handles production and fulfillment externally.

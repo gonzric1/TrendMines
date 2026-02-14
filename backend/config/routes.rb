@@ -8,6 +8,15 @@ Rails.application.routes.draw do
   # API Routes
   namespace :api do
     namespace :v1 do
+      # Authentication routes
+      scope :auth do
+        devise_for :users,
+                   path: "",
+                   controllers: {
+                     sessions: "api/v1/auth/sessions",
+                     registrations: "api/v1/auth/registrations"
+                   }
+      end
       # Trend Signals
       resources :trend_signals do
         member do

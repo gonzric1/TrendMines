@@ -117,44 +117,45 @@ OpenClaw sends you a grid of generated designs via your messaging channel:
 
 You pick the winners. Everything else is automated.
 
-### Step 4: Production Split
+### Step 4: Production Split (Handled by Operator Outside TrendMines)
+
+> **Note:** Everything from approved design onward is handled manually by the operator. TrendMines generates and presents design candidates — the operator decides what to prototype, produce, and list.
 
 ```mermaid
 flowchart TD
-    A[Approved Design] --> B{Product Type?}
-    B -->|T-shirt / Sticker / Print| C[Export high-res PNG/SVG]
-    B -->|3D-printed magnet| D[Use as reference for\n3D modeling in\nFusion360 / Blender / OpenSCAD]
-    B -->|Listing photo| E[Use directly as\nEtsy listing image]
-    
-    C --> F[Upload to print service\nor print in-house]
-    D --> G[Model → Slice → Print]
-    E --> H[Attach to Etsy listing]
-    
-    F --> I[Create Etsy listing]
-    G --> I
-    H --> I
+    A[Approved Design\nin TrendMines] --> B[Operator downloads\ndesign assets]
+    B --> C{Product Type?}
+    C -->|T-shirt / Sticker / Print| D[Export high-res PNG/SVG\nUpload to print service]
+    C -->|3D-printed magnet| E[Use as reference for\n3D modeling in\nFusion360 / Blender / OpenSCAD]
+    C -->|Listing photo| F[Use directly as\nEtsy listing image]
 
-    style C fill:#7ed321,color:#fff
-    style D fill:#f5a623,color:#fff
-    style E fill:#7ed321,color:#fff
+    D --> G[Operator creates Etsy listing]
+    E --> G
+    F --> G
+
+    style A fill:#4a9eff,color:#fff
+    style B fill:#e76f51,color:#fff
+    style D fill:#7ed321,color:#fff
+    style E fill:#f5a623,color:#fff
+    style F fill:#7ed321,color:#fff
 ```
 
 ---
 
 ## Expanding Beyond Magnets: The T-Shirt Opportunity
 
-This is worth calling out explicitly. You currently 3D print magnets and whistles, but with Nano Banana automating the design step, **t-shirts become a near-zero-effort product line** via print-on-demand:
+This is worth calling out explicitly. With Nano Banana automating the design step, **t-shirts become a near-zero-effort product line** via print-on-demand:
 
 | Aspect | 3D Printed Magnets | Print-on-Demand T-Shirts |
 |--------|-------------------|-------------------------|
 | Design effort | 3D modeling required | AI-generated, nearly print-ready |
-| Production | Your 20 printers | Fulfilled by Printful/Printify/Gooten |
+| Production | Your 3D printers | Fulfilled by Printful/Printify/Gooten |
 | Inventory risk | You print stock | Zero — printed when ordered |
-| Etsy integration | Manual fulfillment | Auto-fulfillment via Printify/Printful Etsy integration |
 | Margin | ~67% | ~30-50% (lower but zero effort) |
-| Listing creation | Manual | Could be largely automated |
 
-**The play:** For every cultural token you identify, generate both a magnet concept AND a t-shirt design. The t-shirt costs nothing to prototype (just a listing + AI design), and print-on-demand handles fulfillment. You're essentially testing twice as many products with the same amount of effort.
+**The play:** For every cultural token you identify, TrendMines can generate both a magnet concept AND a t-shirt design. The operator reviews designs in the Design Review Gallery, then manually handles production and listing creation for approved designs.
+
+> **Note:** Printify/Printful integration and auto-listing creation are not part of TrendMines. The operator manages these externally after reviewing and approving designs in the platform.
 
 ---
 
@@ -207,38 +208,41 @@ flowchart TD
         A[Signal Scanning\nAO3 + Reddit + Tumblr] --> B[Niche Discovery\nDemand/Supply Ratio]
         B --> C[Cultural Token\nExtraction]
         C --> D[Gemini API\nDesign Generation\n~$0.04/image]
-        D --> E[Send review grid\nto your Discord]
+        D --> E[Design candidates\nin TrendMines]
     end
 
-    subgraph YOU["Your Actions"]
-        F[Pick winning designs\n2-5 min] --> G{Product type?}
-        G -->|T-shirt| H[Auto-list via\nPrintify + Etsy]
-        G -->|Magnet| I[3D model → print\n→ list]
-        G -->|Both| J[Do both — test\nthe same token\nas 2 products]
+    subgraph TRENDMINES["TrendMines Dashboard"]
+        F[Review designs\nin Design Gallery] --> G[Approve winners]
+    end
+
+    subgraph YOU["Operator Actions (Outside TrendMines)"]
+        H[Download approved designs]
+        H -->|T-shirt| I[Upload to Printify\nCreate Etsy listing]
+        H -->|Magnet| J[3D model → print\nCreate Etsy listing]
     end
 
     E --> F
+    G --> H
 
     style OPENCLAW fill:#2d6a4f,color:#fff
+    style TRENDMINES fill:#4a9eff,color:#fff
     style YOU fill:#e76f51,color:#fff
 ```
 
-### End-to-end automation level
+### What TrendMines automates vs. what the operator handles
 
-| Pipeline Step | Automation Level | Your Time |
-|--------------|-----------------|-----------|
-| Trend scanning | Fully automated | 0 min |
-| Niche discovery | Fully automated | 0 min |
-| Cultural token extraction | Fully automated | 0 min |
-| Design generation | Fully automated | 0 min |
-| Design review | **Human** | 2-5 min |
-| T-shirt listing creation | Semi-automated (Printify) | 5 min |
-| Magnet 3D modeling | **Human** | 30-120 min |
-| Magnet printing | Automated (printer queue) | 0 min |
-| Listing photography | Fully automated (AI) | 0 min |
-| Listing performance monitoring | Fully automated | 0 min |
-| Decay monitoring | Fully automated | 0 min |
+| Pipeline Step | Handled By | Your Time |
+|--------------|-----------|-----------|
+| Trend scanning | TrendMines (automated) | 0 min |
+| Niche discovery | TrendMines (automated) | 0 min |
+| Cultural token extraction | TrendMines (automated) | 0 min |
+| Design generation | TrendMines (automated) | 0 min |
+| Listing photo generation | TrendMines (automated) | 0 min |
+| Design review | **TrendMines dashboard (human)** | 2-5 min |
+| Listing performance monitoring | TrendMines (automated) | 0 min |
+| Decay monitoring | TrendMines (automated) | 0 min |
+| Production & fulfillment | **Operator (outside TrendMines)** | Varies |
+| Etsy listing creation | **Operator (outside TrendMines)** | 10-30 min |
+| Printer allocation | **Operator (outside TrendMines)** | Varies |
 
-**For t-shirts:** ~10 minutes from "trend detected" to "live on Etsy," with almost all of that being your review and final upload.
-
-**For magnets:** The 3D modeling step is still the bottleneck, but everything before and after it is automated.
+**TrendMines gets you from "trend detected" to "here are approved design candidates with listing photos" automatically.** The operator then handles production, listing, and fulfillment.

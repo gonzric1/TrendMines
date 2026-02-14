@@ -8,22 +8,61 @@ module Api
     # Base controller for all API v1 endpoints.
     # Provides authentication, pagination, and parameter sanitization
     # shared across all resource controllers.
+    #
+    # Supports dual authentication:
+    # - API key authentication (X-API-Key header) for OpenClaw
+    # - JWT/session authentication (Devise) for dashboard users
     class BaseController < ApplicationController
-      before_action :authenticate_api_key
+      before_action :authenticate_request
 
       private
+
+      # Dual authentication: accepts either API key or user JWT/session.
+      # This allows OpenClaw to use API keys while dashboard users use
+      # standard authentication with JWT tokens.
+      #
+      # @return [void]
+      # @note Renders 401 Unauthorized if neither auth method succeeds
+      def authenticate_request
+        # Try API key authentication first
+        return if authenticate_api_key
+
+        # Fall back to user authentication (JWT/session)
+        # Attempt to authenticate with JWT or session
+        begin
+          @current_user = warden.authenticate(scope: :user)
+          return if @current_user
+        rescue StandardError => e
+          Rails.logger.debug "User authentication failed: #{e.message}"
+        end
+
+        # Neither auth method succeeded
+        render json: { error: "Unauthorized" }, status: :unauthorized
+      end
+
+      # Returns the authenticated user (either from warden or set by authenticate_request)
+      def current_user
+        @current_user ||= warden.user(:user)
+      end
+
+      # Warden instance from the request environment
+      def warden
+        request.env["warden"]
+      end
 
       # Authenticates incoming requests using X-API-Key header.
       # Requires API_KEY environment variable to be set in production.
       # Uses secure comparison to prevent timing attacks.
       #
-      # @return [void]
+      # @return [Boolean] true if API key is valid, false otherwise
       # @raise [KeyError] if API_KEY environment variable is not configured
       # @note Test environment falls back to 'test-api-key-for-test-suite' for convenience
-      # @note Renders 401 Unauthorized if API key is missing or invalid
       # @note Renders 500 Internal Server Error if API_KEY is not configured in production
       def authenticate_api_key
         api_key = request.headers["X-API-Key"]
+
+        # No API key provided, return false to try user auth
+        return false unless api_key.present?
 
         # Fail hard if API_KEY not set - prevents insecure deployments
         # Test environment falls back to test key for convenience
@@ -35,13 +74,12 @@ module Api
 
         # For now, we'll use a simple env variable check
         # TODO: Move to proper API key management in database
-        unless api_key.present? && ActiveSupport::SecurityUtils.secure_compare(api_key, expected_key)
-          render json: { error: "Unauthorized" }, status: :unauthorized
-        end
+        ActiveSupport::SecurityUtils.secure_compare(api_key, expected_key)
       rescue KeyError => e
         # Log error and return 500 if API_KEY is not configured
         Rails.logger.error("API_KEY environment variable not set: #{e.message}")
         render json: { error: "Server misconfiguration" }, status: :internal_server_error
+        false
       end
 
       # Paginates an ActiveRecord collection based on page and per_page params.

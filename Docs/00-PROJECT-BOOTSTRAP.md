@@ -6,16 +6,16 @@
 
 ## What You're Building
 
-TrendMines is a web application (dashboard + REST API) that powers an automated product discovery pipeline for an Etsy 3D printing business. The operator runs 20 3D printers (6 with multicolor AMS) and sells trending products like fandom magnets and activist whistles. The system:
+TrendMines is a web application (dashboard + REST API) that powers an automated **trend intelligence and product discovery** pipeline for an Etsy 3D printing business. The system focuses on the insight and discovery side of the business — production, fulfillment, and printer management are handled externally by the operator. The system:
 
 1. **Scans** for cultural trends across AO3, Reddit, Tumblr, Google Trends, TikTok, and Etsy
 2. **Identifies** passionate niche communities with high demand and low Etsy supply
 3. **Extracts** specific cultural tokens (quotes, symbols, ship names, in-jokes) that fans would buy
-4. **Generates** product designs using the Gemini API (Nano Banana / Nano Banana Pro)
-5. **Lists** products on Etsy (3D prints fulfilled in-house, t-shirts via Printify print-on-demand)
+4. **Generates** product design candidates using the Gemini API (Nano Banana / Nano Banana Pro)
+5. **Suggests** prototype candidates for human review — the operator decides what to actually produce and list
 6. **Monitors** listing performance and detects when products are declining
 
-An **OpenClaw** AI assistant runs 24/7 and handles all the automated scanning, scoring, extraction, and design generation. It reads from and writes to TrendMines's API. The **web dashboard** is where the human operator reviews signals, approves designs, allocates printers, and monitors business performance.
+An **OpenClaw** AI assistant runs 24/7 and handles all the automated scanning, scoring, extraction, and design generation. It reads from and writes to TrendMines's API. The **web dashboard** is where the human operator reviews signals, evaluates niches, reviews AI-generated designs, and monitors business performance. **Production decisions (what to print, how many printers to allocate, Etsy listing creation, Printify fulfillment) remain human-driven and are handled outside the platform.**
 
 ---
 
@@ -101,9 +101,9 @@ Read these documents in order. Each builds on the previous one.
 - **Backend:** Ruby on Rails (API mode + views)
 - **Database:** PostgreSQL (use JSONB columns for flexible data: `raw_data` on signals, `source_references` on tokens)
 - **Background jobs:** Sidekiq + Redis
-- **Frontend:** Hotwire (Turbo + Stimulus) for most views. Consider React for the Design Review Gallery (keyboard-driven image review) and Printer Fleet Manager (drag-and-drop).
-- **File storage:** S3-compatible (Cloudflare R2 or AWS S3) for generated design images and STL files
-- **External integrations:** Etsy API v3, Gemini API (Nano Banana), Printify API
+- **Frontend:** Hotwire (Turbo + Stimulus) for most views. Consider React for the Design Review Gallery (keyboard-driven image review) and Niche Pipeline kanban (drag-and-drop).
+- **File storage:** S3-compatible (Cloudflare R2 or AWS S3) for generated design images
+- **External integrations:** Gemini API (Nano Banana) for design generation. Etsy API v3 for metrics/monitoring only (listing creation is manual).
 - **Auth:** API key auth for OpenClaw, Devise or similar for dashboard login
 
 ---
@@ -116,7 +116,7 @@ Break the work into the 4 phases defined in `trendforge-system-design.md`. Withi
 
 **Infrastructure tickets:**
 - [ ] Rails project setup (API mode + Hotwire, PostgreSQL, Sidekiq, Redis)
-- [ ] Database schema migration for all entities (Signal, Niche, CulturalToken, Design, Product, Listing, MetricSnapshot, PrinterAssignment)
+- [ ] Database schema migration for all entities (Signal, Niche, CulturalToken, Design, Product, Listing, MetricSnapshot)
 - [ ] Model layer with associations, validations, and scopes
 - [ ] API authentication (API key for OpenClaw, session/JWT for dashboard)
 - [ ] Base API controller with pagination, filtering, sorting conventions
@@ -128,9 +128,8 @@ Break the work into the 4 phases defined in `trendforge-system-design.md`. Withi
 - [ ] Niches API — full CRUD + `/tokens`, `/designs`, `/scorecard` nested endpoints + stage transitions
 - [ ] Cultural Tokens API — full CRUD + `/sources` + `/generate` action
 - [ ] Designs API — full CRUD + `/regenerate` action + image serving
-- [ ] Products API — full CRUD + `/listings`, `/metrics` nested + `/list` action
+- [ ] Products API — full CRUD + `/listings`, `/metrics` nested (read-only tracking, no auto-listing)
 - [ ] Listings API — full CRUD + `/metrics` nested + `/alerts` + `/leaderboard`
-- [ ] Printers API — full CRUD + `/capacity` + `/allocate` + `/queue`
 - [ ] Settings API — read/update config + API key management + `/test-connection`
 - [ ] Webhooks — outbound webhook delivery to OpenClaw
 
@@ -156,19 +155,10 @@ Break the work into the 4 phases defined in `trendforge-system-design.md`. Withi
 - [ ] Gemini API integration (service object for Nano Banana image generation)
 - [ ] Prompt Template management (CRUD in settings, variable interpolation: `{QUOTE}`, `{FANDOM}`, `{COLORS}`)
 - [ ] Design generation pipeline (token → prompt → Gemini API → save image → create Design record)
-- [ ] Printify API integration (submit approved t-shirt designs, create POD products)
-- [ ] Auto-listing creation (approved designs → pre-filled Etsy listing drafts)
 - [ ] Webhook integration for OpenClaw notifications
-
-### Phase 4 — Operations
-
-- [ ] Printer Fleet Manager (visual grid, drag-and-drop assignment, AMS highlighting)
-- [ ] Capacity calculator (product print time × assigned printers = daily/weekly output)
-- [ ] Production queue view (currently printing, next up, estimated completion)
-- [ ] Full Etsy API sync (create listings, pull metrics, sync inventory)
 - [ ] Alert notification system (configurable thresholds, delivery via webhook to OpenClaw)
-- [ ] Decay → reallocation workflow (declining product triggers printer reallocation suggestion)
-- [ ] Product graveyard / post-mortem view
+
+> **Out of scope (handled externally by operator):** Printify integration, auto-listing creation on Etsy, printer fleet management, capacity planning, production queue management. TrendMines generates insights and design candidates — the operator handles production and fulfillment.
 
 ---
 
@@ -179,7 +169,7 @@ Break the work into the 4 phases defined in `trendforge-system-design.md`. Withi
 - **Write tests.** RSpec for Rails (model specs, request specs for every API endpoint). System tests for critical dashboard flows.
 - **Use service objects** for business logic (e.g., `Signals::PromoteToNiche`, `Designs::GenerateFromToken`, `Listings::ClassifyTraction`). Keep controllers thin.
 - **Use form objects or strong params** for API input validation.
-- **Background jobs** for anything that calls external APIs (Gemini, Etsy, Printify). Never block the request cycle on external calls.
+- **Background jobs** for anything that calls external APIs (Gemini, data source scanning). Never block the request cycle on external calls.
 - **JSONB columns** for flexible/evolving data (`raw_data`, `source_references`, `prompt_config`). Use typed accessors (e.g., `store_accessor`) for frequently queried fields.
 - **Enum-based status fields** with state machine transitions (consider `aasm` or `statesman` gems).
 - **API versioning** from the start: `/api/v1/...` — this API will evolve.
@@ -205,9 +195,7 @@ These come from the process documents and should be implemented as domain logic:
    - Google Trends keyword dropped 30%+ from peak
    - Competitor listing count doubled from baseline
 
-5. **AMS printer priority:** Products flagged as "multicolor advantage" should auto-suggest assignment to the 6 AMS printers.
-
-6. **Listings are never deleted.** They cost $0.20 to create and have no ongoing cost. Dead listings stay up indefinitely.
+5. **Listings are never deleted.** They cost $0.20 to create and have no ongoing cost. Dead listings stay up indefinitely.
 
 7. **Design generation cost tracking:** Every Gemini API call logs its cost ($0.039/image). Aggregate in analytics.
 
