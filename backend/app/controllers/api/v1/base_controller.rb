@@ -7,10 +7,11 @@ module Api
 
       def authenticate_api_key
         api_key = request.headers['X-API-Key']
+        expected_key = ENV.fetch('API_KEY', 'dev-api-key-change-in-production')
 
         # For now, we'll use a simple env variable check
         # TODO: Move to proper API key management in database
-        unless api_key == ENV.fetch('API_KEY', 'dev-api-key-change-in-production')
+        unless api_key.present? && ActiveSupport::SecurityUtils.secure_compare(api_key, expected_key)
           render json: { error: 'Unauthorized' }, status: :unauthorized
         end
       end
