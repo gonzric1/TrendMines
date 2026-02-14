@@ -1,0 +1,24 @@
+# Printer Assignments Fixtures
+prusa_mk4_stickers:
+  product: frieren_sticker_product
+  printer_name: "Prusa MK4 #1"
+  status: "active"
+  units_allocated: 100
+
+bambu_x1_prints:
+  product: fern_print_product
+  printer_name: "Bambu X1 Carbon"
+  status: "active"
+  units_allocated: 25
+
+paused_assignment:
+  product: prototype_product
+  printer_name: "Prusa Mini"
+  status: "paused"
+  units_allocated: 10
+
+completed_assignment:
+  product: frieren_sticker_product
+  printer_name: "Prusa MK4 #2"
+  status: "completed"
+  units_allocated: 50

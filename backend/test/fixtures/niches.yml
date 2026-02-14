@@ -1,0 +1,42 @@
+# Niches Fixtures
+frieren_collectors:
+  trend_signal: trending_anime
+  name: "Frieren Collector Community"
+  description: "Fans collecting merchandise from the anime"
+  status: "active"
+  discovered_at: <%= 25.days.ago %>
+  demand_score: 78.5
+  supply_score: 12.3
+  demand_supply_ratio: 6.38
+  community_type: "anime_collectors"
+  ao3_works_count: 450
+  ao3_growth_rate: 25.5
+  etsy_listing_count: 120
+
+evaluating_niche:
+  trend_signal: new_signal
+  name: "BG3 Character Art"
+  description: "Baldur's Gate 3 character art enthusiasts"
+  status: "evaluating"
+  discovered_at: <%= 5.days.ago %>
+  demand_score: 65.0
+  supply_score: 8.0
+  demand_supply_ratio: 8.13
+  community_type: "gaming"
+  ao3_works_count: 1200
+  ao3_growth_rate: 45.2
+  etsy_listing_count: 85
+
+archived_niche:
+  trend_signal: archived_show
+  name: "Stranger Things Retro"
+  description: "80s nostalgia merchandise"
+  status: "archived"
+  discovered_at: <%= 150.days.ago %>
+  demand_score: 35.0
+  supply_score: 75.0
+  demand_supply_ratio: 0.47
+  community_type: "nostalgia"
+  ao3_works_count: 8500
+  ao3_growth_rate: -5.2
+  etsy_listing_count: 3500

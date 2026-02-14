@@ -1,0 +1,36 @@
+# Metric Snapshots Fixtures
+sticker_recent:
+  listing: active_sticker_listing
+  captured_at: <%= 1.day.ago %>
+  views: 245
+  favorites: 18
+  sales: 12
+  revenue: 47.88
+  fav_view_ratio: 0.073
+
+sticker_older:
+  listing: active_sticker_listing
+  captured_at: <%= 7.days.ago %>
+  views: 180
+  favorites: 12
+  sales: 8
+  revenue: 31.92
+  fav_view_ratio: 0.067
+
+print_recent:
+  listing: active_print_listing
+  captured_at: <%= 1.day.ago %>
+  views: 89
+  favorites: 7
+  sales: 3
+  revenue: 44.97
+  fav_view_ratio: 0.079
+
+print_older:
+  listing: active_print_listing
+  captured_at: <%= 5.days.ago %>
+  views: 65
+  favorites: 5
+  sales: 2
+  revenue: 29.98
+  fav_view_ratio: 0.077

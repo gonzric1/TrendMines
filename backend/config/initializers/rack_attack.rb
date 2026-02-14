@@ -1,5 +1,8 @@
 # Rack::Attack configuration for rate limiting
 
+# Skip rate limiting in test environment
+return if Rails.env.test?
+
 class Rack::Attack
   ### Configure Cache ###
   # Use Rails cache for rack-attack

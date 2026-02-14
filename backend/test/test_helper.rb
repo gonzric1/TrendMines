@@ -1,3 +1,14 @@
+require "simplecov"
+SimpleCov.start "rails" do
+  enable_coverage :branch
+  add_filter "/test/"
+  add_filter "/config/"
+
+  # Coverage thresholds (backend: 80% line, 75% branch)
+  minimum_coverage line: 80
+  minimum_coverage branch: 75
+end
+
 ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
 require "rails/test_help"

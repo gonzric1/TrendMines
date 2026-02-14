@@ -1,0 +1,48 @@
+# Cultural Tokens Fixtures
+frieren_quote:
+  niche: frieren_collectors
+  token_type: "quote"
+  value: "Magic is a gift"
+  status: "listed"
+  composite_score: 82.5
+  frequency_score: 75.0
+  emotional_intensity: 88.0
+  visual_potential: 85.0
+  uniqueness_score: 82.0
+  source_references: '{"episode": 3, "character": "Frieren"}'
+
+frieren_character:
+  niche: frieren_collectors
+  token_type: "character"
+  value: "Fern"
+  status: "in_production"
+  composite_score: 90.2
+  frequency_score: 92.0
+  emotional_intensity: 87.5
+  visual_potential: 95.0
+  uniqueness_score: 85.0
+  source_references: '{"popularity_rank": 2}'
+
+bg3_character:
+  niche: evaluating_niche
+  token_type: "character"
+  value: "Shadowheart"
+  status: "extracted"
+  composite_score: 88.7
+  frequency_score: 90.0
+  emotional_intensity: 85.0
+  visual_potential: 92.0
+  uniqueness_score: 87.0
+  source_references: '{"origin_character": true}'
+
+stranger_things_token:
+  niche: archived_niche
+  token_type: "quote"
+  value: "Stranger Things Quote"
+  status: "extracted"
+  composite_score: 60.0
+  frequency_score: 55.0
+  emotional_intensity: 65.0
+  visual_potential: 70.0
+  uniqueness_score: 50.0
+  source_references: '{"season": 4}'

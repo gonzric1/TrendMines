@@ -1,0 +1,36 @@
+# Designs Fixtures
+frieren_sticker:
+  cultural_token: frieren_quote
+  design_type: "sticker"
+  style: "watercolor"
+  status: "approved"
+  prompt_used: "Watercolor art of 'Magic is a gift' quote with magical effects"
+  image_url: "https://example.com/designs/frieren-sticker-1.png"
+  generation_cost: 0.15
+
+fern_print:
+  cultural_token: frieren_character
+  design_type: "art_print"
+  style: "anime_style"
+  status: "approved"
+  prompt_used: "Anime style portrait of Fern from Frieren"
+  image_url: "https://example.com/designs/fern-print-1.png"
+  generation_cost: 0.25
+
+pending_design:
+  cultural_token: bg3_character
+  design_type: "poster"
+  style: "fantasy_art"
+  status: "pending_review"
+  prompt_used: "Epic fantasy art of Shadowheart from Baldur's Gate 3"
+  image_url: "https://example.com/designs/shadowheart-poster-1.png"
+  generation_cost: 0.20
+
+rejected_design:
+  cultural_token: bg3_character
+  design_type: "sticker"
+  style: "chibi"
+  status: "rejected"
+  prompt_used: "Chibi style Shadowheart"
+  image_url: "https://example.com/designs/shadowheart-chibi-1.png"
+  generation_cost: 0.12

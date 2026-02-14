@@ -1,0 +1,30 @@
+# Trend Signals Fixtures
+trending_anime:
+  source: "twitter"
+  topic: "Frieren: Beyond Journey's End"
+  description: "Rising anime series with strong character development"
+  status: "watching"
+  momentum_score: 85.5
+  first_seen: <%= 30.days.ago %>
+  last_updated: <%= 1.day.ago %>
+  raw_data: '{"twitter_mentions": 15000, "hashtag": "#Frieren"}'
+
+archived_show:
+  source: "reddit"
+  topic: "Stranger Things Season 4"
+  description: "Netflix series reaching saturation"
+  status: "archived"
+  momentum_score: 45.2
+  first_seen: <%= 180.days.ago %>
+  last_updated: <%= 90.days.ago %>
+  raw_data: '{"subreddit_activity": "declining"}'
+
+new_signal:
+  source: "tiktok"
+  topic: "Baldur's Gate 3"
+  description: "RPG game gaining traction"
+  status: "new"
+  momentum_score: 92.3
+  first_seen: <%= 7.days.ago %>
+  last_updated: <%= 1.day.ago %>
+  raw_data: '{"tiktok_views": 5000000}'

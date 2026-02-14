@@ -1,0 +1,36 @@
+# Products Fixtures
+frieren_sticker_product:
+  design: frieren_sticker
+  product_type: "vinyl_sticker"
+  name: "Frieren Magic Quote Sticker"
+  status: "listed"
+  unit_cost: 0.50
+  target_price: 3.99
+  margin_pct: 87.5
+  print_time_minutes: 5
+  units_per_batch: 50
+  stl_file_url: nil
+
+fern_print_product:
+  design: fern_print
+  product_type: "art_print"
+  name: "Fern Character Portrait"
+  status: "scaling"
+  unit_cost: 2.00
+  target_price: 14.99
+  margin_pct: 86.7
+  print_time_minutes: 180
+  units_per_batch: 1
+  stl_file_url: nil
+
+prototype_product:
+  design: pending_design
+  product_type: "poster"
+  name: "Shadowheart Epic Poster"
+  status: "prototype"
+  unit_cost: 1.50
+  target_price: 19.99
+  margin_pct: 92.5
+  print_time_minutes: 120
+  units_per_batch: 1
+  stl_file_url: nil
