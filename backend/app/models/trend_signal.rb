@@ -1,3 +1,16 @@
+# Represents an early trend signal detected from various sources.
+# Trend signals are monitored for momentum and promoted to niches when they
+# show commercial potential.
+#
+# @attr [Integer] id Primary key
+# @attr [String] source Source of the signal (e.g., 'twitter', 'reddit', 'google_trends')
+# @attr [String] topic The trending topic or keyword
+# @attr [Text] context Additional context about the signal
+# @attr [Float] momentum_score Calculated momentum metric
+# @attr [String] status Current monitoring status
+# @attr [DateTime] detected_at When the signal was first detected
+# @attr [DateTime] created_at Record creation timestamp
+# @attr [DateTime] updated_at Record update timestamp
 class TrendSignal < ApplicationRecord
   has_many :niches, dependent: :destroy
 
@@ -5,6 +18,9 @@ class TrendSignal < ApplicationRecord
   validates :topic, presence: true
   validates :status, presence: true
 
+  # Signal monitoring status
+  # @note Uses prefix to avoid conflicts (status_new, status_watching, etc.)
+  # @note Default status is :status_new
   enum :status, {
     status_new: "new",
     watching: "watching",
@@ -12,6 +28,13 @@ class TrendSignal < ApplicationRecord
     archived: "archived"
   }, prefix: true, default: :status_new
 
+  # @!scope class
+  # Returns signals sorted by momentum score in descending order
+  # @return [ActiveRecord::Relation<TrendSignal>] Signals ordered by momentum
   scope :by_momentum, -> { order(momentum_score: :desc) }
+
+  # @!scope class
+  # Returns signals currently being monitored
+  # @return [ActiveRecord::Relation<TrendSignal>] Signals with new or watching status
   scope :active, -> { where(status: [:new, :watching]) }
 end

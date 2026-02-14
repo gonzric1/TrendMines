@@ -113,6 +113,48 @@ module Api
         get "/api/v1/products?sort=name;+DELETE+FROM+products", headers: { "X-API-Key" => @valid_api_key }
         assert_response :bad_request
       end
+
+      # Pagination Query Optimization Tests
+      test "paginate method executes only one COUNT query" do
+        # Capture SQL queries
+        queries = []
+        subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |_name, _start, _finish, _id, payload|
+          queries << payload[:sql] if payload[:sql] !~ /^(BEGIN|COMMIT|ROLLBACK|PRAGMA|EXPLAIN)/
+        end
+
+        # Make paginated request
+        get "/api/v1/products?page=1&per_page=2", headers: { "X-API-Key" => @valid_api_key }
+        assert_response :success
+
+        # Unsubscribe from notifications
+        ActiveSupport::Notifications.unsubscribe(subscriber)
+
+        # Count SELECT COUNT(*) queries
+        count_queries = queries.select { |sql| sql.match?(/SELECT COUNT\(\*\)/i) }
+
+        # Verify only one COUNT query was executed
+        assert_equal 1, count_queries.length,
+          "Expected exactly 1 COUNT query, but found #{count_queries.length}:\n#{count_queries.join("\n")}"
+
+        # Verify response structure is correct
+        json = JSON.parse(response.body)
+        assert json["meta"]["total"] > 0, "Expected products to exist in fixtures"
+        assert json["meta"]["total_pages"] > 0, "Expected at least one page"
+      end
+
+      test "paginate returns correct metadata" do
+        # Using fixtures (3 products: frieren_sticker_product, fern_print_product, prototype_product)
+        total_products = Product.count
+
+        get "/api/v1/products?page=1&per_page=2", headers: { "X-API-Key" => @valid_api_key }
+        assert_response :success
+
+        json = JSON.parse(response.body)
+        assert_equal total_products, json["meta"]["total"]
+        assert_equal 1, json["meta"]["page"]
+        assert_equal 2, json["meta"]["per_page"]
+        assert_equal (total_products.to_f / 2).ceil, json["meta"]["total_pages"]
+      end
     end
   end
 end
