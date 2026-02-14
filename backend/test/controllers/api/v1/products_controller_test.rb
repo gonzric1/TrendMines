@@ -201,6 +201,45 @@ module Api
         json = JSON.parse(response.body)
         assert_not_nil json['data']
       end
+
+      # Decay Analysis Tests
+      test "decay_analysis returns 200 with decay_score" do
+        get decay_analysis_api_v1_product_url(@product), headers: @headers
+        assert_response :success
+
+        json = JSON.parse(response.body)
+        assert_not_nil json['decay_score']
+        assert_not_nil json['product_id']
+        assert_not_nil json['recommendation']
+        assert_not_nil json['period']
+      end
+
+      test "decay_analysis requires authentication" do
+        get decay_analysis_api_v1_product_url(@product)
+        assert_response :unauthorized
+      end
+
+      # Transition Tests
+      test "transition changes product status" do
+        patch transition_api_v1_product_url(@product), headers: @headers, params: { status: 'scaling' }
+        assert_response :success
+
+        @product.reload
+        assert_equal 'scaling', @product.status
+      end
+
+      test "transition rejects invalid status" do
+        patch transition_api_v1_product_url(@product), headers: @headers, params: { status: 'invalid' }
+        assert_response :bad_request
+
+        json = JSON.parse(response.body)
+        assert_includes json['error'], 'Invalid status'
+      end
+
+      test "transition requires authentication" do
+        patch transition_api_v1_product_url(@product), params: { status: 'scaling' }
+        assert_response :unauthorized
+      end
     end
   end
 end

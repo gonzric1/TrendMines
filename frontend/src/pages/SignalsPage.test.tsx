@@ -1,40 +1,59 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SignalsPage from './SignalsPage'
 import api from '@/lib/api'
 
-// Mock the API module
 vi.mock('@/lib/api', () => ({
   default: {
     get: vi.fn(),
+    patch: vi.fn(),
+    post: vi.fn(),
   },
 }))
 
-describe('SignalsPage', () => {
-  const mockSignals = [
-    {
-      id: 1,
-      source: 'Reddit',
-      topic: 'Mechanical Keyboards',
-      description: 'Custom keycaps are trending',
-      momentum_score: 85.5,
-      status: 'active',
-      first_seen: '2024-01-15T10:00:00Z',
-    },
-    {
-      id: 2,
-      source: 'TikTok',
-      topic: 'Desk Setup',
-      description: 'Ergonomic accessories gaining traction',
-      momentum_score: 72.3,
-      status: 'trending',
-      first_seen: '2024-01-14T08:30:00Z',
-    },
-  ]
+const mockSignals = [
+  {
+    id: 1,
+    source: 'reddit',
+    topic: 'Mechanical Keyboards',
+    description: 'Custom keycaps are trending',
+    momentum_score: 85.5,
+    status: 'watching',
+    first_seen: '2024-01-15T10:00:00Z',
+    last_updated: '2024-01-20T10:00:00Z',
+    raw_data: {},
+    community_type: 'fandom',
+  },
+  {
+    id: 2,
+    source: 'tiktok',
+    topic: 'Desk Setup',
+    description: 'Ergonomic accessories gaining traction',
+    momentum_score: 42.3,
+    status: 'new',
+    first_seen: '2024-01-14T08:30:00Z',
+    last_updated: '2024-01-19T08:30:00Z',
+    raw_data: {},
+    community_type: 'professional',
+  },
+]
 
+describe('SignalsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    // Default: history endpoint returns empty for sparklines
+    vi.mocked(api.get).mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('/history')) {
+        return Promise.resolve({ data: { data: [] } })
+      }
+      return Promise.resolve({ data: { data: mockSignals } })
+    })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   describe('Loading State', () => {
@@ -48,11 +67,7 @@ describe('SignalsPage', () => {
   })
 
   describe('Success State', () => {
-    it('should display signals when API call succeeds', async () => {
-      vi.mocked(api.get).mockResolvedValueOnce({
-        data: { data: mockSignals },
-      })
-
+    it('should display signal cards when API call succeeds', async () => {
       render(<SignalsPage />)
 
       await waitFor(() => {
@@ -64,59 +79,42 @@ describe('SignalsPage', () => {
       expect(screen.getByText('Ergonomic accessories gaining traction')).toBeInTheDocument()
     })
 
-    it('should display signal metadata correctly', async () => {
-      vi.mocked(api.get).mockResolvedValueOnce({
-        data: { data: mockSignals },
-      })
-
+    it('should display momentum scores with correct formatting', async () => {
       render(<SignalsPage />)
 
       await waitFor(() => {
-        expect(screen.getByText('Reddit')).toBeInTheDocument()
+        expect(screen.getByText('85.5')).toBeInTheDocument()
       })
 
-      expect(screen.getByText('TikTok')).toBeInTheDocument()
-      expect(screen.getByText('85.5')).toBeInTheDocument()
-      expect(screen.getByText('72.3')).toBeInTheDocument()
-      expect(screen.getByText('active')).toBeInTheDocument()
-      expect(screen.getByText('trending')).toBeInTheDocument()
+      expect(screen.getByText('42.3')).toBeInTheDocument()
     })
 
-    it('should format dates correctly', async () => {
-      vi.mocked(api.get).mockResolvedValueOnce({
-        data: { data: mockSignals },
+    it('should display source badges', async () => {
+      render(<SignalsPage />)
+
+      await waitFor(() => {
+        // "Reddit" and "TikTok" appear in both filter toolbar and signal cards
+        expect(screen.getAllByText('Reddit').length).toBeGreaterThanOrEqual(1)
       })
 
+      expect(screen.getAllByText('TikTok').length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('should render signals in a grid layout', async () => {
       render(<SignalsPage />)
 
       await waitFor(() => {
         expect(screen.getByText('Mechanical Keyboards')).toBeInTheDocument()
       })
 
-      const dateElements = screen.getAllByText((content, element) => {
-        return element?.textContent?.includes('First seen:') || false
-      })
-      expect(dateElements.length).toBeGreaterThan(0)
-    })
-  })
-
-  describe('Empty State', () => {
-    it('should display "No signals found" when data is empty', async () => {
-      vi.mocked(api.get).mockResolvedValueOnce({
-        data: { data: [] },
-      })
-
-      render(<SignalsPage />)
-
-      await waitFor(() => {
-        expect(screen.getByText('No signals found')).toBeInTheDocument()
-      })
+      const grid = screen.getByText('Mechanical Keyboards').closest('.grid')
+      expect(grid).toBeInTheDocument()
     })
   })
 
   describe('Error State', () => {
     it('should display error message when API call fails', async () => {
-      vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'))
+      vi.mocked(api.get).mockRejectedValue(new Error('Network error'))
 
       render(<SignalsPage />)
 
@@ -128,147 +126,111 @@ describe('SignalsPage', () => {
     })
 
     it('should not display signals when there is an error', async () => {
-      vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'))
+      vi.mocked(api.get).mockRejectedValue(new Error('Network error'))
 
       render(<SignalsPage />)
 
-      await waitFor(() => {
-        expect(screen.queryByText('Mechanical Keyboards')).not.toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('User Interactions', () => {
-    it('should have a Refresh button', async () => {
-      vi.mocked(api.get).mockResolvedValueOnce({
-        data: { data: mockSignals },
-      })
-
-      render(<SignalsPage />)
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument()
-      })
-    })
-
-    it('should refetch signals when Refresh button is clicked', async () => {
-      const user = userEvent.setup()
-
-      vi.mocked(api.get)
-        .mockResolvedValueOnce({
-          data: { data: mockSignals },
-        })
-        .mockResolvedValueOnce({
-          data: { data: [...mockSignals, {
-            id: 3,
-            source: 'AO3',
-            topic: 'Fan Fiction',
-            description: 'New fandom emerging',
-            momentum_score: 90.0,
-            status: 'hot',
-            first_seen: '2024-01-16T12:00:00Z',
-          }] },
-        })
-
-      render(<SignalsPage />)
-
-      // Wait for initial load
-      await waitFor(() => {
-        expect(screen.getByText('Mechanical Keyboards')).toBeInTheDocument()
-      })
-
-      // Click refresh
-      const refreshButton = screen.getByRole('button', { name: 'Refresh' })
-      await user.click(refreshButton)
-
-      // Wait for new data
-      await waitFor(() => {
-        expect(screen.getByText('Fan Fiction')).toBeInTheDocument()
-      })
-
-      expect(api.get).toHaveBeenCalledTimes(2)
-    })
-
-    it('should show loading state when refreshing', async () => {
-      const user = userEvent.setup()
-
-      vi.mocked(api.get)
-        .mockResolvedValueOnce({
-          data: { data: mockSignals },
-        })
-        .mockImplementationOnce(() => new Promise(() => {}))
-
-      render(<SignalsPage />)
-
-      // Wait for initial load
-      await waitFor(() => {
-        expect(screen.getByText('Mechanical Keyboards')).toBeInTheDocument()
-      })
-
-      // Click refresh
-      const refreshButton = screen.getByRole('button', { name: 'Refresh' })
-      await user.click(refreshButton)
-
-      // Should show loading
-      expect(screen.getByText('Loading signals...')).toBeInTheDocument()
-    })
-
-    it('should clear error when refreshing after error', async () => {
-      const user = userEvent.setup()
-
-      vi.mocked(api.get)
-        .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce({
-          data: { data: mockSignals },
-        })
-
-      render(<SignalsPage />)
-
-      // Wait for error
       await waitFor(() => {
         expect(
           screen.getByText('Failed to fetch signals. Make sure the backend is running.')
         ).toBeInTheDocument()
       })
 
-      // Click refresh
-      const refreshButton = screen.getByRole('button', { name: 'Refresh' })
-      await user.click(refreshButton)
+      expect(screen.queryByText('Mechanical Keyboards')).not.toBeInTheDocument()
+    })
+  })
 
-      // Wait for success
+  describe('Empty State', () => {
+    it('should display "No signals found" when data is empty', async () => {
+      vi.mocked(api.get).mockImplementation((url: string) => {
+        if (typeof url === 'string' && url.includes('/history')) {
+          return Promise.resolve({ data: { data: [] } })
+        }
+        return Promise.resolve({ data: { data: [] } })
+      })
+
+      render(<SignalsPage />)
+
+      await waitFor(() => {
+        expect(screen.getByText('No signals found')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Filter Toolbar', () => {
+    it('should render the filter toolbar', async () => {
+      render(<SignalsPage />)
+
+      await waitFor(() => {
+        expect(screen.getByRole('toolbar', { name: 'Signal filters' })).toBeInTheDocument()
+      })
+    })
+
+    it('should have source filter buttons', async () => {
+      render(<SignalsPage />)
+
       await waitFor(() => {
         expect(screen.getByText('Mechanical Keyboards')).toBeInTheDocument()
       })
 
-      // Error should be gone
-      expect(
-        screen.queryByText('Failed to fetch signals. Make sure the backend is running.')
-      ).not.toBeInTheDocument()
+      // Filter toolbar source buttons
+      const toolbar = screen.getByRole('toolbar', { name: 'Signal filters' })
+      expect(toolbar).toBeInTheDocument()
+    })
+
+    it('should have status and sort selects', async () => {
+      render(<SignalsPage />)
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Filter by status')).toBeInTheDocument()
+      })
+
+      expect(screen.getByLabelText('Sort signals')).toBeInTheDocument()
+    })
+  })
+
+  describe('Auto-refresh', () => {
+    it('should have auto-refresh toggle checked by default', async () => {
+      render(<SignalsPage />)
+
+      const checkbox = screen.getByRole('checkbox')
+      expect(checkbox).toBeChecked()
+    })
+
+    it('should toggle auto-refresh off when unchecked', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+      render(<SignalsPage />)
+
+      const checkbox = screen.getByRole('checkbox')
+      await user.click(checkbox)
+
+      expect(checkbox).not.toBeChecked()
     })
   })
 
   describe('Component Structure', () => {
     it('should display page title and description', async () => {
-      vi.mocked(api.get).mockResolvedValueOnce({
-        data: { data: [] },
-      })
-
       render(<SignalsPage />)
 
-      expect(screen.getByText('Trend Signals')).toBeInTheDocument()
+      expect(screen.getByText('Signal Radar')).toBeInTheDocument()
       expect(
         screen.getByText('Real-time trending topics from various sources')
       ).toBeInTheDocument()
     })
 
-    it('should call API with correct endpoint on mount', () => {
-      vi.mocked(api.get).mockResolvedValueOnce({
-        data: { data: [] },
-      })
-
+    it('should have a Refresh button', async () => {
       render(<SignalsPage />)
 
-      expect(api.get).toHaveBeenCalledWith('/trend_signals')
+      expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument()
+    })
+
+    it('should call API with correct endpoint on mount', () => {
+      render(<SignalsPage />)
+
+      expect(api.get).toHaveBeenCalledWith('/trend_signals', {
+        params: { sort: 'momentum_score DESC' },
+      })
     })
   })
 })

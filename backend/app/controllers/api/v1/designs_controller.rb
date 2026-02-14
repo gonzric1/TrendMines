@@ -40,7 +40,7 @@ module Api
       # @return [JSON] Design record
       # @example GET /api/v1/designs/123
       def show
-        render json: @design
+        render json: serialize_design(@design)
       end
 
       # Creates a new design.
@@ -58,8 +58,15 @@ module Api
       def create
         design = Design.new(design_params)
 
+        if params[:generate] && design.valid?
+          generator = Designs::GeminiGenerator.new
+          result = generator.generate(prompt: design.prompt_used || "", style: design.style)
+          design.prompt_used ||= result[:content]
+          design.generation_cost = result[:estimated_cost]
+        end
+
         if design.save
-          render json: design, status: :created
+          render json: serialize_design(design), status: :created
         else
           render json: { errors: design.errors.full_messages }, status: :unprocessable_entity
         end
@@ -112,8 +119,16 @@ module Api
       def design_params
         params.require(:design).permit(
           :cultural_token_id, :prompt_used, :image_url, :design_type,
-          :style, :status, :generation_cost
+          :style, :status, :generation_cost, :image
         )
+      end
+
+      def serialize_design(design)
+        json = design.as_json
+        if design.image.attached?
+          json["image_url"] = url_for(design.image)
+        end
+        json
       end
     end
   end

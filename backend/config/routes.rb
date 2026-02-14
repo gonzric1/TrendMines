@@ -62,6 +62,8 @@ Rails.application.routes.draw do
           get :listings
           get :metrics
           post :list
+          get :decay_analysis
+          patch :transition
         end
       end
 

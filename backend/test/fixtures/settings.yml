@@ -39,3 +39,27 @@ webhook_url:
   value: "https://example.com/webhook"
   category: "integrations"
   description: "Webhook URL for notifications"
+
+design_prompt_prefix:
+  key: "templates.design_prompt_prefix"
+  value: "Create a high-quality design for print-on-demand merchandise."
+  category: "templates"
+  description: "Prefix added before all design generation prompts"
+
+design_prompt_suffix:
+  key: "templates.design_prompt_suffix"
+  value: "Ensure the design is suitable for printing on various surfaces."
+  category: "templates"
+  description: "Suffix added after all design generation prompts"
+
+listing_title_template:
+  key: "templates.listing_title_template"
+  value: "{token_value} - {style} {product_type}"
+  category: "templates"
+  description: "Template for generating listing titles"
+
+listing_description_template:
+  key: "templates.listing_description_template"
+  value: "Beautiful {style} design featuring {token_value} from {niche_name}."
+  category: "templates"
+  description: "Template for generating listing descriptions"

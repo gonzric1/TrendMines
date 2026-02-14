@@ -3,7 +3,7 @@ module Api
     # API controller for managing Product resources.
     # Provides CRUD operations plus endpoints for listings, metrics, and marketplace integration.
     class ProductsController < BaseController
-      before_action :set_product, only: [:show, :update, :destroy, :listings, :metrics, :list]
+      before_action :set_product, only: [:show, :update, :destroy, :listings, :metrics, :list, :decay_analysis, :transition]
 
       # Lists all products with optional filtering and sorting.
       #
@@ -116,6 +116,36 @@ module Api
       def list
         # TODO: Create Etsy listing for this product
         render json: { message: "Etsy listing creation queued" }
+      end
+
+      # Returns decay analysis for a product based on metric trends.
+      #
+      # @return [JSON] Decay analysis with score, trends, and recommendation
+      # @example GET /api/v1/products/123/decay_analysis
+      def decay_analysis
+        result = Products::DecayAnalyzer.new(@product).call
+        render json: result
+      end
+
+      # Transitions a product to a new lifecycle status.
+      #
+      # @param [String] status The target status
+      # @return [JSON] Updated product or error
+      # @example PATCH /api/v1/products/123/transition
+      def transition
+        new_status = params[:status]
+        allowed = %w[prototype listed scaling declining retired]
+
+        unless allowed.include?(new_status)
+          render json: { error: "Invalid status. Allowed: #{allowed.join(', ')}" }, status: :bad_request
+          return
+        end
+
+        if @product.update(status: new_status)
+          render json: @product
+        else
+          render json: { errors: @product.errors.full_messages }, status: :unprocessable_entity
+        end
       end
 
       private

@@ -104,9 +104,10 @@ module Api
         assert_response :success
 
         json = JSON.parse(response.body)
-        assert_not_nil json['niche']
-        assert_not_nil json['demand_score']
-        assert_not_nil json['ao3_metrics']
+        assert_not_nil json['composite_score']
+        assert_not_nil json['components']
+        assert_not_nil json['weights']
+        assert_includes [true, false], json['viable']
       end
 
       # SQL Injection Protection Tests

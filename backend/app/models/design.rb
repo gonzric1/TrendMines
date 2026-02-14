@@ -14,9 +14,11 @@
 class Design < ApplicationRecord
   belongs_to :cultural_token
   has_many :products, dependent: :nullify
+  has_one_attached :image
 
   validates :design_type, presence: true
   validates :status, presence: true
+  validate :acceptable_image, if: -> { image.attached? }
 
   # Design review workflow status
   # @note Default status is :pending_review
@@ -36,4 +38,16 @@ class Design < ApplicationRecord
   # Returns approved designs ready for product creation
   # @return [ActiveRecord::Relation<Design>] Designs with approved status
   scope :approved, -> { where(status: :approved) }
+
+  private
+
+  def acceptable_image
+    unless image.content_type.in?(%w[image/png image/jpeg image/webp])
+      errors.add(:image, "must be a PNG, JPEG, or WebP file")
+    end
+
+    if image.blob.byte_size > 10.megabytes
+      errors.add(:image, "must be less than 10MB")
+    end
+  end
 end

@@ -112,17 +112,8 @@ module Api
       # @return [JSON] Scorecard with niche details and all demand/supply metrics
       # @example GET /api/v1/niches/123/scorecard
       def scorecard
-        render json: {
-          niche: @niche,
-          demand_score: @niche.demand_score,
-          supply_score: @niche.supply_score,
-          demand_supply_ratio: @niche.demand_supply_ratio,
-          ao3_metrics: {
-            works_count: @niche.ao3_works_count,
-            growth_rate: @niche.ao3_growth_rate
-          },
-          etsy_listing_count: @niche.etsy_listing_count
-        }
+        result = Niches::CalculateScorecard.new(@niche).call
+        render json: result
       end
 
       private
