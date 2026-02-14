@@ -1,9 +1,19 @@
 module Api
   module V1
+    # API controller for managing Design resources.
+    # Provides CRUD operations plus endpoints for design regeneration and review workflow.
     class DesignsController < BaseController
       before_action :set_design, only: [:show, :update, :destroy, :regenerate]
 
-      # GET /api/v1/designs
+      # Lists all designs with optional filtering and sorting.
+      #
+      # @param [String] status Optional filter by design status (e.g., 'pending_review', 'approved')
+      # @param [String] design_type Optional filter by design type
+      # @param [String] sort Sort parameter (column and optional direction)
+      # @param [Integer] page Page number (default: 1)
+      # @param [Integer] per_page Items per page (default: 25, max: 100)
+      # @return [JSON] Paginated designs with metadata
+      # @example GET /api/v1/designs?status=approved&sort=created_at DESC
       def index
         designs = Design.all
 
