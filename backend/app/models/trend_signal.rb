@@ -12,6 +12,7 @@
 # @attr [DateTime] created_at Record creation timestamp
 # @attr [DateTime] updated_at Record update timestamp
 class TrendSignal < ApplicationRecord
+  has_many :signal_snapshots, dependent: :destroy
   has_many :niches, dependent: :destroy
 
   validates :source, presence: true

@@ -1,0 +1,36 @@
+# Signal Snapshots Fixtures
+anime_snapshot_1d:
+  trend_signal: trending_anime
+  momentum_score: 87.2
+  source_metrics: '{"twitter_mentions": 16000, "hashtag_velocity": 120}'
+  captured_at: <%= 1.day.ago %>
+
+anime_snapshot_7d:
+  trend_signal: trending_anime
+  momentum_score: 82.1
+  source_metrics: '{"twitter_mentions": 14000, "hashtag_velocity": 95}'
+  captured_at: <%= 7.days.ago %>
+
+anime_snapshot_14d:
+  trend_signal: trending_anime
+  momentum_score: 75.0
+  source_metrics: '{"twitter_mentions": 11000, "hashtag_velocity": 70}'
+  captured_at: <%= 14.days.ago %>
+
+anime_snapshot_30d:
+  trend_signal: trending_anime
+  momentum_score: 60.5
+  source_metrics: '{"twitter_mentions": 8000, "hashtag_velocity": 45}'
+  captured_at: <%= 30.days.ago %>
+
+new_signal_snapshot_1d:
+  trend_signal: new_signal
+  momentum_score: 93.0
+  source_metrics: '{"tiktok_views": 5500000}'
+  captured_at: <%= 1.day.ago %>
+
+new_signal_snapshot_3d:
+  trend_signal: new_signal
+  momentum_score: 90.1
+  source_metrics: '{"tiktok_views": 4800000}'
+  captured_at: <%= 3.days.ago %>

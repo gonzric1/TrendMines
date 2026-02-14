@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_14_213045) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_14_214110) do
   create_table "cultural_tokens", force: :cascade do |t|
     t.float "composite_score"
     t.datetime "created_at", null: false
@@ -128,6 +128,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_14_213045) do
     t.index ["key"], name: "index_settings_on_key", unique: true
   end
 
+  create_table "signal_snapshots", force: :cascade do |t|
+    t.datetime "captured_at"
+    t.datetime "created_at", null: false
+    t.float "momentum_score"
+    t.json "source_metrics"
+    t.integer "trend_signal_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["trend_signal_id", "captured_at"], name: "index_signal_snapshots_on_trend_signal_id_and_captured_at"
+    t.index ["trend_signal_id"], name: "index_signal_snapshots_on_trend_signal_id"
+  end
+
   create_table "trend_signals", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
@@ -162,4 +173,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_14_213045) do
   add_foreign_key "niches", "trend_signals"
   add_foreign_key "printer_assignments", "products"
   add_foreign_key "products", "designs"
+  add_foreign_key "signal_snapshots", "trend_signals"
 end

@@ -3,7 +3,7 @@ module Api
     # API controller for managing TrendSignal resources.
     # Provides CRUD operations for tracking and monitoring emerging trends from various sources.
     class TrendSignalsController < BaseController
-      before_action :set_trend_signal, only: [:show, :update, :destroy]
+      before_action :set_trend_signal, only: [:show, :update, :destroy, :history]
 
       # Lists all trend signals with optional filtering and sorting.
       #
@@ -90,14 +90,29 @@ module Api
       end
 
       # Returns historical momentum data for a signal.
+      # Supports period and granularity filtering for sparkline charts.
       #
-      # @return [JSON] Momentum history data
-      # @note Not yet implemented - returns placeholder response
-      # @example GET /api/v1/trend_signals/123/history
+      # @param [String] period Time period: 7d, 14d, 30d, 90d (default: 30d)
+      # @param [String] granularity Bucketing: hourly, daily, weekly (default: daily)
+      # @return [JSON] Momentum history with signal_id, period, granularity, and data array
+      # @example GET /api/v1/trend_signals/123/history?period=7d&granularity=hourly
       def history
-        signal = TrendSignal.find(params[:id])
-        # TODO: Implement momentum history tracking
-        render json: { message: "History endpoint - to be implemented" }
+        days = parse_period(params[:period])
+        granularity = parse_granularity(params[:granularity])
+        start_date = days.days.ago
+
+        snapshots = @trend_signal.signal_snapshots
+          .for_period(start_date, Time.current)
+          .recent
+
+        data = group_by_granularity(snapshots, granularity)
+
+        render json: {
+          signal_id: @trend_signal.id,
+          period: "#{days}d",
+          granularity: granularity[:name],
+          data: data
+        }
       end
 
       private
@@ -107,6 +122,47 @@ module Api
       # @raise [ActiveRecord::RecordNotFound] if signal doesn't exist
       def set_trend_signal
         @trend_signal = TrendSignal.find(params[:id])
+      end
+
+      # Parses period parameter into number of days.
+      # @param period [String, nil] Period string (7d, 14d, 30d, 90d)
+      # @return [Integer] Number of days
+      def parse_period(period)
+        case period
+        when "7d" then 7
+        when "14d" then 14
+        when "90d" then 90
+        else 30
+        end
+      end
+
+      # Parses granularity parameter into name and strftime format.
+      # @param granularity [String, nil] Granularity string (hourly, daily, weekly)
+      # @return [Hash] Hash with :name and :format keys
+      def parse_granularity(granularity)
+        case granularity
+        when "hourly" then { name: "hourly", format: "%Y-%m-%d %H:00" }
+        when "weekly" then { name: "weekly", format: "%Y-W%W" }
+        else { name: "daily", format: "%Y-%m-%d" }
+        end
+      end
+
+      # Groups snapshots by granularity bucket and aggregates values.
+      # @param snapshots [ActiveRecord::Relation<SignalSnapshot>] Snapshots to group
+      # @param granularity [Hash] Granularity hash with :format key
+      # @return [Array<Hash>] Aggregated data points with date, momentum_score, source_metrics
+      def group_by_granularity(snapshots, granularity)
+        snapshots.group_by { |s| s.captured_at.strftime(granularity[:format]) }
+          .map do |date, group|
+            avg_momentum = group.sum(&:momentum_score) / group.size
+            latest_metrics = group.max_by(&:captured_at).source_metrics
+
+            {
+              date: date,
+              momentum_score: avg_momentum.round(2),
+              source_metrics: latest_metrics
+            }
+          end
       end
 
       # Strong parameters for trend signal create/update operations.
