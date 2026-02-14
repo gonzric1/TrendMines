@@ -48,6 +48,14 @@ Rails.application.routes.draw do
         end
       end
 
+      # Settings
+      get 'settings', to: 'settings#index'
+      patch 'settings', to: 'settings#update'
+      scope :settings do
+        get 'api_keys', to: 'settings#api_keys', as: :settings_api_keys
+        post 'test_connection', to: 'settings#test_connection', as: :settings_test_connection
+      end
+
       # Products
       resources :products do
         member do

@@ -1,5 +1,6 @@
 # Clear existing data
 puts "Clearing existing data..."
+Setting.destroy_all
 PrinterAssignment.destroy_all
 MetricSnapshot.destroy_all
 Listing.destroy_all
@@ -135,7 +136,34 @@ PrinterAssignment.create!(
   status: :active
 )
 
+# Create Settings
+puts "Creating settings..."
+[
+  # Scanning frequencies (hours between scans)
+  { key: "scanning.ao3_frequency", value: 12, category: "scanning", description: "Hours between AO3 scans" },
+  { key: "scanning.reddit_frequency", value: 6, category: "scanning", description: "Hours between Reddit scans" },
+  { key: "scanning.etsy_frequency", value: 24, category: "scanning", description: "Hours between Etsy scans" },
+  { key: "scanning.tumblr_frequency", value: 12, category: "scanning", description: "Hours between Tumblr scans" },
+  # Scoring weights (1-10)
+  { key: "scoring.momentum_weight", value: 3, category: "scoring", description: "Weight for momentum score (1-10)" },
+  { key: "scoring.demand_supply_weight", value: 5, category: "scoring", description: "Weight for demand/supply ratio (1-10)" },
+  { key: "scoring.frequency_weight", value: 4, category: "scoring", description: "Weight for frequency score (1-10)" },
+  { key: "scoring.emotional_weight", value: 3, category: "scoring", description: "Weight for emotional intensity (1-10)" },
+  { key: "scoring.visual_weight", value: 4, category: "scoring", description: "Weight for visual potential (1-10)" },
+  { key: "scoring.uniqueness_weight", value: 5, category: "scoring", description: "Weight for uniqueness score (1-10)" },
+  { key: "scoring.viability_threshold", value: 0.6, category: "scoring", description: "Minimum viability score to promote a niche (0-1)" },
+  # Alert thresholds
+  { key: "alerts.sales_drop_threshold", value: 0.3, category: "alerts", description: "Sales drop ratio that triggers an alert (0-1)" },
+  { key: "alerts.low_fav_view_ratio", value: 0.02, category: "alerts", description: "Minimum fav/view ratio before alerting (0-1)" },
+  { key: "alerts.min_daily_views", value: 10, category: "alerts", description: "Minimum daily views before alerting" },
+  # Integrations
+  { key: "integrations.webhook_url", value: "", category: "integrations", description: "Webhook URL for notifications" },
+].each do |attrs|
+  Setting.create!(attrs)
+end
+
 puts "\nSeed data created successfully!"
+puts "  - Settings: #{Setting.count}"
 puts "  - Trend Signals: #{TrendSignal.count}"
 puts "  - Niches: #{Niche.count}"
 puts "  - Cultural Tokens: #{CulturalToken.count}"

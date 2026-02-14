@@ -1,0 +1,41 @@
+ao3_frequency:
+  key: "scanning.ao3_frequency"
+  value: 12
+  category: "scanning"
+  description: "Hours between AO3 scans"
+
+reddit_frequency:
+  key: "scanning.reddit_frequency"
+  value: 6
+  category: "scanning"
+  description: "Hours between Reddit scans"
+
+momentum_weight:
+  key: "scoring.momentum_weight"
+  value: 3
+  category: "scoring"
+  description: "Weight for momentum score (1-10)"
+
+demand_supply_weight:
+  key: "scoring.demand_supply_weight"
+  value: 5
+  category: "scoring"
+  description: "Weight for demand/supply ratio (1-10)"
+
+viability_threshold:
+  key: "scoring.viability_threshold"
+  value: 0.6
+  category: "scoring"
+  description: "Minimum viability score to promote a niche (0-1)"
+
+sales_drop_threshold:
+  key: "alerts.sales_drop_threshold"
+  value: 0.3
+  category: "alerts"
+  description: "Sales drop ratio that triggers an alert (0-1)"
+
+webhook_url:
+  key: "integrations.webhook_url"
+  value: "https://example.com/webhook"
+  category: "integrations"
+  description: "Webhook URL for notifications"
