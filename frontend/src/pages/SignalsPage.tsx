@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import api, { PaginatedResponse } from '@/lib/api'
+import api, { type PaginatedResponse } from '@/lib/api'
 
 interface TrendSignal {
   id: number
