@@ -127,10 +127,15 @@ module Api
 
       private
 
+      # Finds and sets @niche from params[:id].
+      # @return [void]
+      # @raise [ActiveRecord::RecordNotFound] if niche doesn't exist
       def set_niche
         @niche = Niche.find(params[:id])
       end
 
+      # Strong parameters for niche create/update operations.
+      # @return [ActionController::Parameters] Permitted niche attributes
       def niche_params
         params.require(:niche).permit(
           :trend_signal_id, :name, :description, :community_type,
