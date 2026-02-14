@@ -4,7 +4,7 @@ module Api
   module V1
     class ListingsControllerTest < ActionDispatch::IntegrationTest
       def setup
-        @api_key = ENV.fetch('API_KEY', 'dev-api-key-change-in-production')
+        @api_key = ENV.fetch('API_KEY')
         @headers = { 'X-API-Key' => @api_key }
         @listing = listings(:active_sticker_listing)
       end
