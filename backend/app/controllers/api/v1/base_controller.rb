@@ -1,4 +1,9 @@
+# API namespace for TrendMines application.
+# Contains versioned API modules.
 module Api
+  # Version 1 of the TrendMines API.
+  # Provides RESTful endpoints for trend analysis, niche discovery,
+  # and print-on-demand product management.
   module V1
     # Base controller for all API v1 endpoints.
     # Provides authentication, pagination, and parameter sanitization
