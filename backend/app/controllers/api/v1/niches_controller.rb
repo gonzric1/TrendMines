@@ -10,8 +10,14 @@ module Api
         # Filter by status
         niches = niches.where(status: params[:status]) if params[:status].present?
 
-        # Sort
-        niches = niches.order(params[:sort] || 'demand_supply_ratio DESC')
+        # Sort with SQL injection protection
+        sort_order = sanitize_sort_params(
+          allowed_columns: %w[id name status demand_score supply_score demand_supply_ratio ao3_works_count ao3_growth_rate etsy_listing_count created_at updated_at discovered_at],
+          default: 'demand_supply_ratio DESC'
+        )
+        return unless sort_order # Early return if validation failed
+
+        niches = niches.order(sort_order)
 
         render_paginated(niches)
       end

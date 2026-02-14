@@ -108,6 +108,25 @@ module Api
         assert_not_nil json['demand_score']
         assert_not_nil json['ao3_metrics']
       end
+
+      # SQL Injection Protection Tests
+      test "should allow valid sort on demand_supply_ratio" do
+        get api_v1_niches_url(sort: 'demand_supply_ratio DESC'), headers: @headers
+        assert_response :success
+      end
+
+      test "should reject SQL injection attempt" do
+        get api_v1_niches_url(sort: 'id);DROP TABLE niches;--'), headers: @headers
+        assert_response :bad_request
+
+        json = JSON.parse(response.body)
+        assert_includes json['error'], 'Invalid sort column'
+      end
+
+      test "should reject invalid column name" do
+        get api_v1_niches_url(sort: 'malicious_column'), headers: @headers
+        assert_response :bad_request
+      end
     end
   end
 end

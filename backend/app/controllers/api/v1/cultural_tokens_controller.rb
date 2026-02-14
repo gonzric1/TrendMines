@@ -16,8 +16,14 @@ module Api
         # Filter by status
         tokens = tokens.where(status: params[:status]) if params[:status].present?
 
-        # Sort
-        tokens = tokens.order(params[:sort] || 'composite_score DESC')
+        # Sort with SQL injection protection
+        sort_order = sanitize_sort_params(
+          allowed_columns: %w[id token_type value status frequency_score emotional_intensity visual_potential uniqueness_score composite_score created_at updated_at],
+          default: 'composite_score DESC'
+        )
+        return unless sort_order # Early return if validation failed
+
+        tokens = tokens.order(sort_order)
 
         render_paginated(tokens)
       end

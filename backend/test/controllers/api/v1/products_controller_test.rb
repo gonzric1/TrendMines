@@ -139,6 +139,68 @@ module Api
         json = JSON.parse(response.body)
         assert json['message'].present?
       end
+
+      # SQL Injection Protection Tests
+      test "should allow valid sort column with ASC" do
+        get api_v1_products_url(sort: 'name ASC'), headers: @headers
+        assert_response :success
+      end
+
+      test "should allow valid sort column with DESC" do
+        get api_v1_products_url(sort: 'created_at DESC'), headers: @headers
+        assert_response :success
+      end
+
+      test "should allow valid sort column without direction" do
+        get api_v1_products_url(sort: 'name'), headers: @headers
+        assert_response :success
+      end
+
+      test "should reject invalid sort column" do
+        get api_v1_products_url(sort: 'invalid_column'), headers: @headers
+        assert_response :bad_request
+
+        json = JSON.parse(response.body)
+        assert_includes json['error'], 'Invalid sort column'
+      end
+
+      test "should reject SQL injection in sort column" do
+        get api_v1_products_url(sort: 'id);DROP TABLE products;--'), headers: @headers
+        assert_response :bad_request
+
+        json = JSON.parse(response.body)
+        assert_includes json['error'], 'Invalid sort column'
+      end
+
+      test "should reject invalid sort direction" do
+        get api_v1_products_url(sort: 'name INVALID'), headers: @headers
+        assert_response :bad_request
+
+        json = JSON.parse(response.body)
+        assert_includes json['error'], 'Invalid sort direction'
+      end
+
+      test "should reject SQL injection in sort direction" do
+        get api_v1_products_url(sort: 'name; DROP TABLE products;'), headers: @headers
+        assert_response :bad_request
+
+        json = JSON.parse(response.body)
+        # The semicolon makes it parse as column 'name;' which is rejected
+        assert_includes json['error'], 'Invalid sort column'
+      end
+
+      test "should reject UNION injection attempt" do
+        get api_v1_products_url(sort: 'name UNION SELECT * FROM users--'), headers: @headers
+        assert_response :bad_request
+      end
+
+      test "should use default sort when sort param is empty" do
+        get api_v1_products_url(sort: ''), headers: @headers
+        assert_response :success
+
+        json = JSON.parse(response.body)
+        assert_not_nil json['data']
+      end
     end
   end
 end

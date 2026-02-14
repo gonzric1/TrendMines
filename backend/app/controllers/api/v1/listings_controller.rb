@@ -10,8 +10,14 @@ module Api
         # Filter by status
         listings = listings.where(status: params[:status]) if params[:status].present?
 
-        # Sort
-        listings = listings.order(params[:sort] || 'listed_at DESC')
+        # Sort with SQL injection protection
+        sort_order = sanitize_sort_params(
+          allowed_columns: %w[id title status price listed_at created_at updated_at],
+          default: 'listed_at DESC'
+        )
+        return unless sort_order # Early return if validation failed
+
+        listings = listings.order(sort_order)
 
         render_paginated(listings)
       end

@@ -63,6 +63,56 @@ module Api
         # we verify that both incorrect keys are rejected consistently
         assert_equal({ "error" => "Unauthorized" }, JSON.parse(response.body))
       end
+
+      # SQL Injection Protection Tests for sanitize_sort_params
+      test "sanitize_sort_params returns default when sort param is blank" do
+        get "/api/v1/products", headers: { "X-API-Key" => @valid_api_key }
+        assert_response :success
+        # Implicitly tests that default sort is used
+      end
+
+      test "sanitize_sort_params accepts valid column with ASC" do
+        get "/api/v1/products?sort=name+ASC", headers: { "X-API-Key" => @valid_api_key }
+        assert_response :success
+      end
+
+      test "sanitize_sort_params accepts valid column with DESC" do
+        get "/api/v1/products?sort=name+DESC", headers: { "X-API-Key" => @valid_api_key }
+        assert_response :success
+      end
+
+      test "sanitize_sort_params rejects invalid column" do
+        get "/api/v1/products?sort=invalid_column", headers: { "X-API-Key" => @valid_api_key }
+        assert_response :bad_request
+        json = JSON.parse(response.body)
+        assert_match /Invalid sort column/, json['error']
+      end
+
+      test "sanitize_sort_params rejects invalid direction" do
+        get "/api/v1/products?sort=name+INVALID", headers: { "X-API-Key" => @valid_api_key }
+        assert_response :bad_request
+        json = JSON.parse(response.body)
+        assert_match /Invalid sort direction/, json['error']
+      end
+
+      test "sanitize_sort_params blocks SQL injection with DROP TABLE" do
+        get "/api/v1/products?sort=id);DROP+TABLE+products;--", headers: { "X-API-Key" => @valid_api_key }
+        assert_response :bad_request
+
+        # Verify the products table still exists by making a valid request
+        get "/api/v1/products", headers: { "X-API-Key" => @valid_api_key }
+        assert_response :success
+      end
+
+      test "sanitize_sort_params blocks SQL injection with UNION" do
+        get "/api/v1/products?sort=name+UNION+SELECT+*+FROM+users", headers: { "X-API-Key" => @valid_api_key }
+        assert_response :bad_request
+      end
+
+      test "sanitize_sort_params blocks SQL injection with semicolon" do
+        get "/api/v1/products?sort=name;+DELETE+FROM+products", headers: { "X-API-Key" => @valid_api_key }
+        assert_response :bad_request
+      end
     end
   end
 end

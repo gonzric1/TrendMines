@@ -13,8 +13,14 @@ module Api
         # Filter by status
         products = products.where(status: params[:status]) if params[:status].present?
 
-        # Sort
-        products = products.order(params[:sort] || 'created_at DESC')
+        # Sort with SQL injection protection
+        sort_order = sanitize_sort_params(
+          allowed_columns: %w[id name created_at updated_at product_type status unit_cost target_price margin_pct],
+          default: 'created_at DESC'
+        )
+        return unless sort_order # Early return if validation failed
+
+        products = products.order(sort_order)
 
         render_paginated(products)
       end

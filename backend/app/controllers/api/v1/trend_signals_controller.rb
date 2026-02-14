@@ -13,8 +13,14 @@ module Api
         # Filter by status
         signals = signals.where(status: params[:status]) if params[:status].present?
 
-        # Sort
-        signals = signals.order(params[:sort] || 'momentum_score DESC')
+        # Sort with SQL injection protection
+        sort_order = sanitize_sort_params(
+          allowed_columns: %w[id source topic status momentum_score first_seen last_updated created_at updated_at],
+          default: 'momentum_score DESC'
+        )
+        return unless sort_order # Early return if validation failed
+
+        signals = signals.order(sort_order)
 
         render_paginated(signals)
       end
