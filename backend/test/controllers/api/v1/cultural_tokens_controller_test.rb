@@ -122,11 +122,18 @@ module Api
       end
 
       test "should queue design generation" do
-        post generate_api_v1_cultural_token_url(@token), headers: @headers
+        extracted_token = cultural_tokens(:bg3_character)
+        post generate_api_v1_cultural_token_url(extracted_token), headers: @headers
         assert_response :success
 
         json = JSON.parse(response.body)
         assert json['message'].present?
+        assert_equal "queued", json['status']
+      end
+
+      test "should reject design generation for non-extracted token" do
+        post generate_api_v1_cultural_token_url(@token), headers: @headers
+        assert_response :unprocessable_entity
       end
     end
   end

@@ -5,18 +5,17 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # Devise authentication routes (outside namespaces to keep :user scope)
+  devise_for :users,
+             path: "api/v1/auth",
+             controllers: {
+               sessions: "api/v1/auth/sessions",
+               registrations: "api/v1/auth/registrations"
+             }
+
   # API Routes
   namespace :api do
     namespace :v1 do
-      # Authentication routes
-      scope :auth do
-        devise_for :users,
-                   path: "",
-                   controllers: {
-                     sessions: "api/v1/auth/sessions",
-                     registrations: "api/v1/auth/registrations"
-                   }
-      end
       # Trend Signals
       resources :trend_signals do
         member do
@@ -65,6 +64,14 @@ Rails.application.routes.draw do
           get :decay_analysis
           patch :transition
         end
+      end
+
+      # Analytics
+      scope :analytics do
+        get 'revenue', to: 'analytics#revenue', as: :analytics_revenue
+        get 'funnel', to: 'analytics#funnel', as: :analytics_funnel
+        get 'sources', to: 'analytics#sources', as: :analytics_sources
+        get 'costs', to: 'analytics#costs', as: :analytics_costs
       end
 
       # Listings

@@ -38,15 +38,6 @@ module Api
           }, status: :ok
         end
 
-        # Renders 401 Unauthorized when sign-in credentials are invalid.
-        #
-        # @param _resource [User] The unauthenticated user (unused)
-        # @param _opts [Hash] Additional options (unused)
-        # @return [void]
-        def respond_with_failure(_resource, _opts = {})
-          render json: { error: "Invalid email or password" }, status: :unauthorized
-        end
-
         # Responds with 204 No Content on sign-out.
         # The JWT token is automatically added to {JwtDenylist} by devise-jwt.
         #

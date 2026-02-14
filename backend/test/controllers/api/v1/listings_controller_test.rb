@@ -107,12 +107,43 @@ module Api
         assert_response :created
       end
 
-      test "should get alerts" do
+      test "should get alerts with classification data" do
         get alerts_api_v1_listings_url, headers: @headers
         assert_response :success
 
         json = JSON.parse(response.body)
-        assert json['message'].present?
+        assert_not_nil json['data']
+        assert_not_nil json['meta']
+        assert json['meta']['total'].is_a?(Integer)
+
+        json['data'].each do |alert|
+          assert alert['listing_id'].present?
+          assert alert['alert_type'].present?
+          assert_includes %w[first_sale promising no_signal], alert['alert_type']
+          assert alert['threshold_crossed'].present?
+          assert alert['recommended_action'].present?
+        end
+      end
+
+      test "should filter alerts by alert_type" do
+        get alerts_api_v1_listings_url(alert_type: 'first_sale'), headers: @headers
+        assert_response :success
+
+        json = JSON.parse(response.body)
+        json['data'].each do |alert|
+          assert_equal 'first_sale', alert['alert_type']
+        end
+      end
+
+      test "should filter alerts by date range" do
+        get alerts_api_v1_listings_url(
+          start_date: 2.days.ago.to_date.iso8601,
+          end_date: Date.today.iso8601
+        ), headers: @headers
+        assert_response :success
+
+        json = JSON.parse(response.body)
+        assert_not_nil json['data']
       end
 
       test "should get leaderboard" do

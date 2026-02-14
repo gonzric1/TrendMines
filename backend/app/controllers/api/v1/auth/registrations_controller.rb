@@ -41,11 +41,12 @@ module Api
         end
 
         # Strong parameters for user registration.
-        # Permits email, password, password_confirmation, name, and role.
+        # Permits email, password, password_confirmation, and name.
+        # Role defaults to "operator" — only admins can promote users.
         #
         # @return [ActionController::Parameters] Permitted registration attributes
         def sign_up_params
-          params.require(:user).permit(:email, :password, :password_confirmation, :name, :role)
+          params.require(:user).permit(:email, :password, :password_confirmation, :name)
         end
       end
     end

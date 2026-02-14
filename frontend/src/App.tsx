@@ -3,6 +3,7 @@ import { AppLayout } from './components/layout/AppLayout'
 import SignalsPage from './pages/SignalsPage'
 import PipelinePage from './pages/PipelinePage'
 import CulturalTokensPage from './pages/CulturalTokensPage'
+import DecayMonitorPage from './pages/DecayMonitorPage'
 import SettingsPage from './pages/SettingsPage'
 import './App.css'
 
@@ -15,6 +16,7 @@ function App() {
           <Route path="/signals" element={<SignalsPage />} />
           <Route path="/pipeline" element={<PipelinePage />} />
           <Route path="/tokens" element={<CulturalTokensPage />} />
+          <Route path="/decay" element={<DecayMonitorPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Routes>

@@ -105,12 +105,24 @@ module Api
 
       # Queues design generation for this cultural token.
       #
-      # @return [JSON] Confirmation message
-      # @note Not yet implemented - returns placeholder response
+      # @return [JSON] Confirmation message with job details
       # @example POST /api/v1/cultural_tokens/123/generate
       def generate
-        # TODO: Trigger design generation job
-        render json: { message: "Design generation queued for token #{@token.id}" }
+        unless @token.extracted? || @token.designs_ready?
+          return render json: { error: "Token must be in 'extracted' or 'designs_ready' status to generate designs" },
+                        status: :unprocessable_entity
+        end
+
+        DesignGenerationJob.perform_later(
+          cultural_token_ids: [@token.id],
+          template_id: params[:template_id]
+        )
+
+        render json: {
+          message: "Design generation queued for token #{@token.id}",
+          token_id: @token.id,
+          status: "queued"
+        }
       end
 
       private

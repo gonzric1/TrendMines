@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   Printer,
   BarChart3,
+  Activity,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -27,6 +28,7 @@ const navigationItems = [
   { path: '/products', label: 'Products', icon: Package },
   { path: '/listings', label: 'Listings', icon: ShoppingCart },
   { path: '/printers', label: 'Printers', icon: Printer },
+  { path: '/decay', label: 'Decay Monitor', icon: Activity },
   { path: '/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/settings', label: 'Settings', icon: Settings },
 ]

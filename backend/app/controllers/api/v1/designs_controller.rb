@@ -97,12 +97,20 @@ module Api
 
       # Queues regeneration of a design with revised parameters.
       #
-      # @return [JSON] Confirmation message
-      # @note Not yet implemented - returns placeholder response
+      # @return [JSON] Confirmation message with job details
       # @example POST /api/v1/designs/123/regenerate
       def regenerate
-        # TODO: Trigger design regeneration job
-        render json: { message: "Design regeneration queued" }
+        DesignGenerationJob.perform_later(
+          cultural_token_ids: [@design.cultural_token_id],
+          template_id: params[:template_id]
+        )
+
+        render json: {
+          message: "Design regeneration queued",
+          design_id: @design.id,
+          token_id: @design.cultural_token_id,
+          status: "queued"
+        }
       end
 
       private

@@ -114,14 +114,40 @@ module Api
         end
       end
 
-      # Returns performance alerts for listings.
+      # Returns performance alerts for listings based on traction classification.
+      # Detects threshold crossings and returns actionable alerts.
       #
-      # @return [JSON] Alerts data
-      # @note Not yet implemented - returns placeholder response
-      # @example GET /api/v1/listings/alerts
+      # @param [String] alert_type Optional filter: first_sale, promising, no_signal
+      # @param [String] start_date Optional ISO date to filter alerts from
+      # @param [String] end_date Optional ISO date to filter alerts until
+      # @return [JSON] Array of alert objects with listing info and recommendations
+      # @example GET /api/v1/listings/alerts?alert_type=first_sale&start_date=2026-02-01
       def alerts
-        # TODO: Implement alerts logic
-        render json: { message: "Alerts endpoint - to be implemented" }
+        classifications = Listings::ClassifyTraction.batch_classify
+
+        alerts = classifications.filter_map do |classification|
+          alert_type = map_label_to_alert_type(classification[:label])
+          next unless alert_type
+
+          listing = Listing.find(classification[:listing_id])
+          latest_snapshot = listing.metric_snapshots.recent.first
+
+          {
+            listing_id: listing.id,
+            title: listing.title,
+            alert_type: alert_type,
+            label: classification[:label],
+            icon: classification[:icon],
+            color: classification[:color],
+            threshold_crossed: threshold_description(classification[:label]),
+            timestamp: latest_snapshot&.captured_at || listing.updated_at,
+            recommended_action: classification[:recommended_action]
+          }
+        end
+
+        alerts = filter_alerts(alerts)
+
+        render json: { data: alerts, meta: { total: alerts.size } }
       end
 
       # Returns top-performing listings leaderboard.
@@ -157,6 +183,44 @@ module Api
         params.require(:metric_snapshot).permit(
           :views, :favorites, :sales, :fav_view_ratio, :revenue, :captured_at
         )
+      end
+
+      ALERT_TYPE_MAP = {
+        "scaling" => "first_sale",
+        "promising" => "promising",
+        "no_signal" => "no_signal"
+      }.freeze
+
+      THRESHOLD_DESCRIPTIONS = {
+        "scaling" => "Organic sale within 14 days of listing",
+        "promising" => "Favorite/view ratio exceeded 5% with no sales yet",
+        "no_signal" => "Views exceeded 100 with favorite/view ratio below 5%"
+      }.freeze
+
+      def map_label_to_alert_type(label)
+        ALERT_TYPE_MAP[label]
+      end
+
+      def threshold_description(label)
+        THRESHOLD_DESCRIPTIONS[label] || "Classification threshold crossed"
+      end
+
+      def filter_alerts(alerts)
+        if params[:alert_type].present?
+          alerts = alerts.select { |a| a[:alert_type] == params[:alert_type] }
+        end
+
+        if params[:start_date].present?
+          start_date = Date.parse(params[:start_date]).beginning_of_day
+          alerts = alerts.select { |a| a[:timestamp] >= start_date }
+        end
+
+        if params[:end_date].present?
+          end_date = Date.parse(params[:end_date]).end_of_day
+          alerts = alerts.select { |a| a[:timestamp] <= end_date }
+        end
+
+        alerts
       end
     end
   end

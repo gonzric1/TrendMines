@@ -3,7 +3,7 @@ require "test_helper"
 class UserTest < ActiveSupport::TestCase
   test "should create user with valid attributes" do
     user = User.new(
-      email: "test@example.com",
+      email: "user-create-#{SecureRandom.hex(4)}@example.com",
       password: "password123",
       password_confirmation: "password123",
       name: "Test User",
@@ -26,7 +26,7 @@ class UserTest < ActiveSupport::TestCase
 
   test "should require name" do
     user = User.new(
-      email: "test@example.com",
+      email: "user-name-#{SecureRandom.hex(4)}@example.com",
       password: "password123",
       password_confirmation: "password123",
       role: :operator
@@ -37,7 +37,7 @@ class UserTest < ActiveSupport::TestCase
 
   test "should enforce minimum name length" do
     user = User.new(
-      email: "test@example.com",
+      email: "user-minname-#{SecureRandom.hex(4)}@example.com",
       password: "password123",
       password_confirmation: "password123",
       name: "A",
@@ -49,7 +49,7 @@ class UserTest < ActiveSupport::TestCase
 
   test "should have operator role by default" do
     user = User.create!(
-      email: "test@example.com",
+      email: "user-default-#{SecureRandom.hex(4)}@example.com",
       password: "password123",
       password_confirmation: "password123",
       name: "Test User"
@@ -59,7 +59,7 @@ class UserTest < ActiveSupport::TestCase
 
   test "should support admin role" do
     user = User.create!(
-      email: "admin@example.com",
+      email: "user-admin-#{SecureRandom.hex(4)}@example.com",
       password: "password123",
       password_confirmation: "password123",
       name: "Admin User",
@@ -70,8 +70,9 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "should validate email uniqueness" do
+    unique_email = "user-dup-#{SecureRandom.hex(4)}@example.com"
     User.create!(
-      email: "duplicate@example.com",
+      email: unique_email,
       password: "password123",
       password_confirmation: "password123",
       name: "First User",
@@ -79,7 +80,7 @@ class UserTest < ActiveSupport::TestCase
     )
 
     duplicate_user = User.new(
-      email: "duplicate@example.com",
+      email: unique_email,
       password: "password456",
       password_confirmation: "password456",
       name: "Second User",
@@ -103,7 +104,7 @@ class UserTest < ActiveSupport::TestCase
 
   test "should require password confirmation to match" do
     user = User.new(
-      email: "test@example.com",
+      email: "user-pwmatch-#{SecureRandom.hex(4)}@example.com",
       password: "password123",
       password_confirmation: "different",
       name: "Test User",

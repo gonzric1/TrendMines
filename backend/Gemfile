@@ -66,4 +66,7 @@ end
 group :test do
   # Code coverage analysis
   gem "simplecov", require: false
+
+  # minitest/mock extracted in minitest 6.x (Ruby 4.0)
+  gem "minitest-mock"
 end
