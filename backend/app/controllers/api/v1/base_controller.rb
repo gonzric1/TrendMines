@@ -9,7 +9,12 @@ module Api
         api_key = request.headers['X-API-Key']
 
         # Fail hard if API_KEY not set - prevents insecure deployments
-        expected_key = ENV.fetch('API_KEY')
+        # Test environment falls back to test key for convenience
+        expected_key = if Rails.env.test?
+          ENV.fetch('API_KEY', 'test-api-key-for-test-suite')
+        else
+          ENV.fetch('API_KEY')
+        end
 
         # For now, we'll use a simple env variable check
         # TODO: Move to proper API key management in database

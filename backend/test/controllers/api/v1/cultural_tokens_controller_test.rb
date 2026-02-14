@@ -4,7 +4,7 @@ module Api
   module V1
     class CulturalTokensControllerTest < ActionDispatch::IntegrationTest
       def setup
-        @api_key = ENV.fetch('API_KEY')
+        @api_key = ENV.fetch('API_KEY', 'test-api-key-for-test-suite')
         @headers = { 'X-API-Key' => @api_key }
         @token = cultural_tokens(:frieren_quote)
       end
