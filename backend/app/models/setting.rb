@@ -31,6 +31,7 @@ class Setting < ApplicationRecord
   # - scanning: must be positive integers (hours)
   # - scoring weights: must be integers 1-10
   # - scoring threshold: must be float 0-1
+  # - scoring _min: must be positive numbers
   # - alerts: must be numeric, thresholds 0-1 for ratios, positive for counts
   def validate_value_by_category
     return if value.nil?
@@ -41,6 +42,8 @@ class Setting < ApplicationRecord
     when "scoring"
       if key&.end_with?("_threshold")
         validate_ratio
+      elsif key&.end_with?("_min")
+        validate_positive_number
       else
         validate_weight
       end

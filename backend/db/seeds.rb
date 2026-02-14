@@ -140,24 +140,44 @@ PrinterAssignment.create!(
 puts "Creating settings..."
 [
   # Scanning frequencies (hours between scans)
-  { key: "scanning.ao3_frequency", value: 12, category: "scanning", description: "Hours between AO3 scans" },
+  { key: "scanning.ao3_frequency", value: 12, category: "scanning", description: "Hours between AO3 fandom scans" },
   { key: "scanning.reddit_frequency", value: 6, category: "scanning", description: "Hours between Reddit scans" },
-  { key: "scanning.etsy_frequency", value: 24, category: "scanning", description: "Hours between Etsy scans" },
   { key: "scanning.tumblr_frequency", value: 12, category: "scanning", description: "Hours between Tumblr scans" },
-  # Scoring weights (1-10)
+  { key: "scanning.etsy_frequency", value: 48, category: "scanning", description: "Hours between Etsy scans" },
+  { key: "scanning.google_trends_frequency", value: 24, category: "scanning", description: "Hours between Google Trends scans" },
+
+  # Scoring weights (1-10 scale)
   { key: "scoring.momentum_weight", value: 3, category: "scoring", description: "Weight for momentum score (1-10)" },
-  { key: "scoring.demand_supply_weight", value: 5, category: "scoring", description: "Weight for demand/supply ratio (1-10)" },
-  { key: "scoring.frequency_weight", value: 4, category: "scoring", description: "Weight for frequency score (1-10)" },
-  { key: "scoring.emotional_weight", value: 3, category: "scoring", description: "Weight for emotional intensity (1-10)" },
-  { key: "scoring.visual_weight", value: 4, category: "scoring", description: "Weight for visual potential (1-10)" },
-  { key: "scoring.uniqueness_weight", value: 5, category: "scoring", description: "Weight for uniqueness score (1-10)" },
-  { key: "scoring.viability_threshold", value: 0.6, category: "scoring", description: "Minimum viability score to promote a niche (0-1)" },
+  { key: "scoring.emotional_intensity_weight", value: 3, category: "scoring", description: "Weight for emotional intensity (1-10)" },
+  { key: "scoring.printability_weight", value: 2, category: "scoring", description: "Weight for printability score (1-10)" },
+  { key: "scoring.giftability_weight", value: 2, category: "scoring", description: "Weight for giftability score (1-10)" },
+  { key: "scoring.margin_weight", value: 2, category: "scoring", description: "Weight for profit margin (1-10)" },
+  { key: "scoring.saturation_weight", value: 1, category: "scoring", description: "Weight for market saturation (1-10)" },
+  { key: "scoring.viability_threshold", value: 0.18, category: "scoring", description: "Minimum score to promote (0-1)" },
+  { key: "scoring.demand_supply_ratio_min", value: 2.0, category: "scoring", description: "Minimum demand/supply ratio for viability" },
+  { key: "scoring.momentum_score_min", value: 5.0, category: "scoring", description: "Minimum momentum to promote" },
+
   # Alert thresholds
-  { key: "alerts.sales_drop_threshold", value: 0.3, category: "alerts", description: "Sales drop ratio that triggers an alert (0-1)" },
-  { key: "alerts.low_fav_view_ratio", value: 0.02, category: "alerts", description: "Minimum fav/view ratio before alerting (0-1)" },
-  { key: "alerts.min_daily_views", value: 10, category: "alerts", description: "Minimum daily views before alerting" },
-  # Integrations
-  { key: "integrations.webhook_url", value: "", category: "integrations", description: "Webhook URL for notifications" },
+  { key: "alerts.sales_decline_threshold", value: 0.15, category: "alerts", description: "Sales decline % that triggers alert (0-1)" },
+  { key: "alerts.fav_view_threshold", value: 0.05, category: "alerts", description: "Minimum fav/view ratio (0-1)" },
+  { key: "alerts.competitor_growth_multiplier", value: 2.0, category: "alerts", description: "Competitor growth multiplier that triggers alert" },
+  { key: "alerts.min_views", value: 100, category: "alerts", description: "Minimum views for healthy listing" },
+  { key: "alerts.min_favorites", value: 10, category: "alerts", description: "Minimum favorites for healthy listing" },
+  { key: "alerts.min_sales", value: 5, category: "alerts", description: "Minimum sales for healthy listing" },
+  { key: "alerts.low_inventory_units", value: 5, category: "alerts", description: "Units remaining before alert" },
+
+  # Prompt templates
+  { key: "templates.design_generation_prefix", value: "Create a minimalist print-on-demand design featuring", category: "templates", description: "Design prompt prefix" },
+  { key: "templates.design_generation_suffix", value: "Style: clean, modern, suitable for small format (3x3 inch). High contrast, simple shapes.", category: "templates", description: "Design prompt suffix" },
+  { key: "templates.cultural_token_extraction", value: "Analyze the following fandom content and extract frequently repeated phrases...", category: "templates", description: "Cultural token extraction prompt" },
+  { key: "templates.niche_evaluation", value: "Evaluate this trend signal for commercial potential...", category: "templates", description: "Niche evaluation prompt" },
+
+  # Integration settings
+  { key: "integrations.openclaw_webhook_url", value: "", category: "integrations", description: "OpenClaw webhook URL" },
+  { key: "integrations.dashboard_refresh_seconds", value: 30, category: "integrations", description: "Dashboard refresh interval (seconds)" },
+  { key: "integrations.background_job_queue", value: "default", category: "integrations", description: "Background job queue name" },
+  { key: "integrations.enable_auto_listing", value: false, category: "integrations", description: "Enable automatic listing creation" },
+  { key: "integrations.max_concurrent_designs", value: 5, category: "integrations", description: "Max concurrent design generation jobs" },
 ].each do |attrs|
   Setting.create!(attrs)
 end
