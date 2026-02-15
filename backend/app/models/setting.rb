@@ -10,7 +10,7 @@
 # @attr [DateTime] created_at Record creation timestamp
 # @attr [DateTime] updated_at Record update timestamp
 class Setting < ApplicationRecord
-  CATEGORIES = %w[scanning scoring alerts templates integrations].freeze
+  CATEGORIES = %w[scanning scoring alerts templates integrations api_keys].freeze
 
   validates :key, presence: true, uniqueness: true
   validates :category, presence: true, inclusion: { in: CATEGORIES }
@@ -37,7 +37,11 @@ class Setting < ApplicationRecord
     return if value.nil?
 
     case category
+    when "api_keys"
+      # Encrypted strings — skip validation
+      return
     when "scanning"
+      return if key&.end_with?("_last_scan") # ISO8601 timestamps
       validate_positive_integer
     when "scoring"
       if key&.end_with?("_threshold")

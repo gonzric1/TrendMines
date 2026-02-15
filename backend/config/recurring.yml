@@ -17,3 +17,7 @@ production:
   capture_listing_metrics:
     class: CaptureListingMetricsJob
     schedule: every day at 6am
+
+  signal_scan:
+    class: SignalScanJob
+    schedule: every hour

@@ -3,7 +3,7 @@ module Designs
     GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent"
 
     def initialize
-      @api_key = Rails.application.credentials.dig(:gemini_api_key) || ENV["GEMINI_API_KEY"]
+      @api_key = resolve_gemini_key
     end
 
     def generate(prompt:, style: nil)
@@ -43,6 +43,23 @@ module Designs
       end
 
       JSON.parse(response.body)
+    end
+
+    # 3-tier credential lookup: Settings DB (encrypted) -> Rails credentials -> ENV
+    def resolve_gemini_key
+      # 1. Settings DB
+      setting = Setting.find_by(key: "api_keys.gemini_api_key")
+      if setting&.value.present?
+        decrypted = EncryptedSettingValue.decrypt(setting.value)
+        return decrypted if decrypted.present?
+      end
+
+      # 2. Rails credentials
+      credential = Rails.application.credentials.dig(:gemini_api_key)
+      return credential if credential.present?
+
+      # 3. ENV
+      ENV["GEMINI_API_KEY"]
     end
 
     def parse_response(response)

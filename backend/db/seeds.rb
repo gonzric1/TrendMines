@@ -145,6 +145,7 @@ puts "Creating settings..."
   { key: "scanning.tumblr_frequency", value: 12, category: "scanning", description: "Hours between Tumblr scans" },
   { key: "scanning.etsy_frequency", value: 48, category: "scanning", description: "Hours between Etsy scans" },
   { key: "scanning.google_trends_frequency", value: 24, category: "scanning", description: "Hours between Google Trends scans" },
+  { key: "scanning.tiktok_frequency", value: 24, category: "scanning", description: "Hours between TikTok scans" },
 
   # Scoring weights (1-10 scale)
   { key: "scoring.momentum_weight", value: 3, category: "scoring", description: "Weight for momentum score (1-10)" },

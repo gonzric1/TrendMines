@@ -52,6 +52,7 @@ Rails.application.routes.draw do
       patch 'settings', to: 'settings#update'
       scope :settings do
         get 'api_keys', to: 'settings#api_keys', as: :settings_api_keys
+        patch 'api_keys', to: 'settings#update_api_keys', as: :settings_update_api_keys
         post 'test_connection', to: 'settings#test_connection', as: :settings_test_connection
       end
 

@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Separator } from '@/components/ui/separator'
 import api from '@/lib/api'
 
 interface SettingItem {
@@ -11,7 +18,10 @@ interface SettingItem {
 interface ApiKeyItem {
   key: string
   configured: boolean
+  source: string | null
+  masked_value: string | null
   description: string
+  group: string
 }
 
 interface SettingsResponse {
@@ -48,7 +58,7 @@ const CATEGORY_INFO: Record<CategoryKey, { title: string; description: string }>
   },
   api_keys: {
     title: 'API Keys',
-    description: 'View the configuration status of external API keys',
+    description: 'Manage API keys for external data sources. Keys are encrypted at rest.',
   },
 }
 
@@ -60,6 +70,15 @@ const CATEGORY_ORDER: CategoryKey[] = [
   'integrations',
   'api_keys',
 ]
+
+const SERVICE_GROUP_LABELS: Record<string, string> = {
+  reddit: 'Reddit',
+  tumblr: 'Tumblr',
+  google_trends: 'Google Trends (SerpAPI)',
+  gemini: 'Google Gemini',
+}
+
+const SERVICE_GROUP_ORDER = ['reddit', 'tumblr', 'google_trends', 'gemini']
 
 function getInputType(key: string): 'integer' | 'float' | 'text' | 'textarea' {
   if (key.startsWith('scanning.')) return 'integer'
@@ -85,6 +104,42 @@ function getInputProps(key: string): { min?: number; max?: number; step?: number
   return {}
 }
 
+function getSourceBadge(source: string | null) {
+  switch (source) {
+    case 'database':
+      return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Saved in DB</Badge>
+    case 'credentials':
+      return <Badge variant="secondary">Credentials File</Badge>
+    case 'env':
+      return <Badge variant="secondary">Environment</Badge>
+    default:
+      return <Badge variant="outline">Not Configured</Badge>
+  }
+}
+
+function SettingsSkeletonCards() {
+  return (
+    <div className="space-y-6">
+      {[1, 2, 3].map((i) => (
+        <Card key={i}>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-4 w-64 mt-1" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[1, 2, 3].map((j) => (
+              <div key={j} className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-9 w-full" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -93,8 +148,15 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  // API key form state
+  const [apiKeyValues, setApiKeyValues] = useState<Record<string, string>>({})
+  const [apiKeyVisible, setApiKeyVisible] = useState<Record<string, boolean>>({})
+  const [savingApiKeys, setSavingApiKeys] = useState(false)
+  const [apiKeySaveMessage, setApiKeySaveMessage] = useState<string | null>(null)
+  const [apiKeySaveError, setApiKeySaveError] = useState<string | null>(null)
   const [testingService, setTestingService] = useState<string | null>(null)
-  const [testResult, setTestResult] = useState<string | null>(null)
+  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({})
 
   const fetchSettings = async () => {
     try {
@@ -150,14 +212,53 @@ export default function SettingsPage() {
     }
   }
 
-  const handleTestConnection = async (service: string) => {
+  const handleApiKeyChange = (keyName: string, value: string) => {
+    setApiKeyValues((prev) => ({ ...prev, [keyName]: value }))
+    setApiKeySaveMessage(null)
+    setApiKeySaveError(null)
+  }
+
+  const toggleApiKeyVisibility = (keyName: string) => {
+    setApiKeyVisible((prev) => ({ ...prev, [keyName]: !prev[keyName] }))
+  }
+
+  const handleSaveApiKeys = async () => {
+    const nonEmpty = Object.fromEntries(
+      Object.entries(apiKeyValues).filter(([, v]) => v.trim() !== '')
+    )
+    if (Object.keys(nonEmpty).length === 0) return
+
     try {
-      setTestingService(service)
-      setTestResult(null)
-      const response = await api.post<{ message: string; service: string }>('/settings/test_connection', { service })
-      setTestResult(`${response.data.service}: ${response.data.message}`)
+      setSavingApiKeys(true)
+      setApiKeySaveError(null)
+      setApiKeySaveMessage(null)
+      const response = await api.patch<{ saved: string[] }>('/settings/api_keys', { api_keys: nonEmpty })
+      setApiKeySaveMessage(`Saved ${response.data.saved.length} API key(s).`)
+      setApiKeyValues({})
+      fetchSettings()
     } catch (err) {
-      setTestResult(`Failed to test ${service} connection.`)
+      setApiKeySaveError('Failed to save API keys.')
+      console.error(err)
+    } finally {
+      setSavingApiKeys(false)
+    }
+  }
+
+  const handleTestConnection = async (group: string) => {
+    try {
+      setTestingService(group)
+      setTestResults((prev) => {
+        const next = { ...prev }
+        delete next[group]
+        return next
+      })
+      const response = await api.post<{ success: boolean; message: string; service: string }>(
+        '/settings/test_connection',
+        { service: group }
+      )
+      setTestResults((prev) => ({ ...prev, [group]: { success: response.data.success, message: response.data.message } }))
+    } catch (err) {
+      setTestResults((prev) => ({ ...prev, [group]: { success: false, message: `Failed to test ${group} connection.` } }))
       console.error(err)
     } finally {
       setTestingService(null)
@@ -165,12 +266,26 @@ export default function SettingsPage() {
   }
 
   const hasChanges = Object.keys(modified).length > 0
+  const hasApiKeyChanges = Object.values(apiKeyValues).some((v) => v.trim() !== '')
+
+  // Group API keys by service group
+  const groupedApiKeys = (settings?.api_keys || []).reduce<Record<string, ApiKeyItem[]>>((acc, item) => {
+    const group = item.group || 'other'
+    if (!acc[group]) acc[group] = []
+    acc[group].push(item)
+    return acc
+  }, {})
+
+  // Check if any key in a group is configured
+  const isGroupConfigured = (group: string) => {
+    return groupedApiKeys[group]?.some((k) => k.configured) || false
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground mt-1">
             Manage application configuration and integrations
           </p>
@@ -181,33 +296,43 @@ export default function SettingsPage() {
       </div>
 
       {saveMessage && (
-        <div className="bg-green-500/10 border border-green-500 text-green-700 dark:text-green-400 px-4 py-3 rounded">
-          {saveMessage}
-        </div>
+        <Card className="border-green-500/50 bg-green-500/5">
+          <CardContent className="py-3 px-4">
+            <p className="text-sm font-medium text-green-700 dark:text-green-400">
+              {saveMessage}
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {saveError && (
-        <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
-          {saveError}
-        </div>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="py-3 px-4">
+            <p className="text-sm font-medium text-destructive">
+              {saveError}
+            </p>
+          </CardContent>
+        </Card>
       )}
 
-      {loading && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Loading settings...</p>
-        </div>
-      )}
+      {loading && <SettingsSkeletonCards />}
 
       {error && (
-        <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
-          {error}
-        </div>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="py-3 px-4">
+            <p className="text-sm font-medium text-destructive">
+              {error}
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {!loading && !error && settings && Object.keys(settings).length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No settings found</p>
-        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">No settings found</p>
+          </CardContent>
+        </Card>
       )}
 
       {!loading && !error && settings && (
@@ -219,42 +344,92 @@ export default function SettingsPage() {
               const keys = settings.api_keys
               if (!keys || keys.length === 0) return null
               return (
-                <div key={category} className="border rounded-lg p-6">
-                  <h2 className="text-xl font-semibold mb-1">{info.title}</h2>
-                  <p className="text-sm text-muted-foreground mb-4">{info.description}</p>
-                  <div className="space-y-4">
-                    {keys.map((item) => {
-                      const serviceName = item.key.replace('api_keys.', '').replace('_api_key', '')
-                      return (
-                        <div key={item.key} className="flex items-center justify-between">
-                          <div>
-                            <label className="text-sm font-medium">{item.description}</label>
-                            <span
-                              className={`ml-3 inline-block px-2 py-1 text-xs font-medium rounded ${
-                                item.configured
-                                  ? 'bg-green-500/10 text-green-700 dark:text-green-400'
-                                  : 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400'
-                              }`}
-                            >
-                              {item.configured ? 'Configured' : 'Not Configured'}
-                            </span>
+                <Card key={category}>
+                  <CardHeader>
+                    <CardTitle>{info.title}</CardTitle>
+                    <CardDescription>{info.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      {SERVICE_GROUP_ORDER.map((group, groupIndex) => {
+                        const groupKeys = groupedApiKeys[group]
+                        if (!groupKeys) return null
+
+                        const testResult = testResults[group]
+
+                        return (
+                          <div key={group}>
+                            {groupIndex > 0 && <Separator className="mb-6" />}
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-sm font-semibold">{SERVICE_GROUP_LABELS[group] || group}</h3>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleTestConnection(group)}
+                                disabled={!isGroupConfigured(group) || testingService === group}
+                              >
+                                {testingService === group ? 'Testing...' : 'Test Connection'}
+                              </Button>
+                            </div>
+
+                            {testResult && (
+                              <div className={`mb-4 p-3 rounded-md text-sm ${testResult.success ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-destructive/10 text-destructive'}`}>
+                                {testResult.message}
+                              </div>
+                            )}
+
+                            <div className="space-y-3">
+                              {groupKeys.map((item) => (
+                                <div key={item.key} className="space-y-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <Label htmlFor={`api-key-${item.key}`} className="text-sm">
+                                      {item.description}
+                                    </Label>
+                                    {getSourceBadge(item.source)}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Input
+                                      id={`api-key-${item.key}`}
+                                      type={apiKeyVisible[item.key] ? 'text' : 'password'}
+                                      placeholder={item.masked_value || 'Enter key...'}
+                                      value={apiKeyValues[item.key] || ''}
+                                      onChange={(e) => handleApiKeyChange(item.key, e.target.value)}
+                                      className="font-mono text-sm"
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => toggleApiKeyVisibility(item.key)}
+                                      className="shrink-0 px-3"
+                                      type="button"
+                                    >
+                                      {apiKeyVisible[item.key] ? 'Hide' : 'Show'}
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleTestConnection(serviceName)}
-                            disabled={!item.configured || testingService === serviceName}
-                          >
-                            {testingService === serviceName ? 'Testing...' : 'Test Connection'}
-                          </Button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  {testResult && (
-                    <p className="mt-4 text-sm text-muted-foreground">{testResult}</p>
-                  )}
-                </div>
+                        )
+                      })}
+                    </div>
+
+                    <div className="mt-6 flex items-center gap-3">
+                      <Button
+                        onClick={handleSaveApiKeys}
+                        disabled={!hasApiKeyChanges || savingApiKeys}
+                      >
+                        {savingApiKeys ? 'Saving...' : 'Save API Keys'}
+                      </Button>
+                      {apiKeySaveMessage && (
+                        <p className="text-sm text-green-700 dark:text-green-400">{apiKeySaveMessage}</p>
+                      )}
+                      {apiKeySaveError && (
+                        <p className="text-sm text-destructive">{apiKeySaveError}</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               )
             }
 
@@ -262,44 +437,46 @@ export default function SettingsPage() {
             if (!items || items.length === 0) return null
 
             return (
-              <div key={category} className="border rounded-lg p-6">
-                <h2 className="text-xl font-semibold mb-1">{info.title}</h2>
-                <p className="text-sm text-muted-foreground mb-4">{info.description}</p>
-                <div className="space-y-4">
-                  {items.map((item) => {
-                    const inputType = getInputType(item.key)
-                    const inputProps = getInputProps(item.key)
-                    const currentValue = getCurrentValue(item.key, item.value)
+              <Card key={category}>
+                <CardHeader>
+                  <CardTitle>{info.title}</CardTitle>
+                  <CardDescription>{info.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {items.map((item) => {
+                      const inputType = getInputType(item.key)
+                      const inputProps = getInputProps(item.key)
+                      const currentValue = getCurrentValue(item.key, item.value)
 
-                    return (
-                      <div key={item.key}>
-                        <label className="block text-sm font-medium mb-1">
-                          {item.description}
-                        </label>
-                        {inputType === 'textarea' ? (
-                          <textarea
-                            className="w-full border rounded-md px-3 py-2 text-sm bg-background"
-                            rows={3}
-                            value={currentValue}
-                            onChange={(e) => handleChange(item.key, e.target.value)}
-                          />
-                        ) : (
-                          <input
-                            type={inputType === 'text' ? 'text' : 'number'}
-                            className="w-full border rounded-md px-3 py-2 text-sm bg-background"
-                            value={currentValue}
-                            onChange={(e) => {
-                              const val = inputType === 'text' ? e.target.value : Number(e.target.value)
-                              handleChange(item.key, val)
-                            }}
-                            {...inputProps}
-                          />
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+                      return (
+                        <div key={item.key} className="space-y-2">
+                          <Label htmlFor={item.key}>{item.description}</Label>
+                          {inputType === 'textarea' ? (
+                            <Textarea
+                              id={item.key}
+                              rows={3}
+                              value={currentValue}
+                              onChange={(e) => handleChange(item.key, e.target.value)}
+                            />
+                          ) : (
+                            <Input
+                              id={item.key}
+                              type={inputType === 'text' ? 'text' : 'number'}
+                              value={currentValue}
+                              onChange={(e) => {
+                                const val = inputType === 'text' ? e.target.value : Number(e.target.value)
+                                handleChange(item.key, val)
+                              }}
+                              {...inputProps}
+                            />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
             )
           })}
         </div>
