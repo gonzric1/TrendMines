@@ -10,7 +10,7 @@
 # @attr [DateTime] created_at Record creation timestamp
 # @attr [DateTime] updated_at Record update timestamp
 class Setting < ApplicationRecord
-  CATEGORIES = %w[scanning scoring alerts templates integrations api_keys].freeze
+  CATEGORIES = %w[scanning scoring alerts templates integrations api_keys ai].freeze
 
   validates :key, presence: true, uniqueness: true
   validates :category, presence: true, inclusion: { in: CATEGORIES }
@@ -39,6 +39,9 @@ class Setting < ApplicationRecord
     case category
     when "api_keys"
       # Encrypted strings — skip validation
+      return
+    when "ai"
+      # String values (model IDs) — skip numeric validation
       return
     when "scanning"
       return if key&.end_with?("_last_scan") # ISO8601 timestamps

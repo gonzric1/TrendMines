@@ -15,6 +15,11 @@ class TrendSignal < ApplicationRecord
   has_many :signal_snapshots, dependent: :destroy
   has_many :niches, dependent: :destroy
 
+  belongs_to :correlated_primary, class_name: "TrendSignal",
+             foreign_key: "correlated_signal_id", optional: true
+  has_many :correlated_signals, class_name: "TrendSignal",
+           foreign_key: "correlated_signal_id"
+
   validates :source, presence: true
   validates :topic, presence: true
   validates :status, presence: true
@@ -38,4 +43,12 @@ class TrendSignal < ApplicationRecord
   # Returns signals currently being monitored
   # @return [ActiveRecord::Relation<TrendSignal>] Signals with new or watching status
   scope :active, -> { where(status: [:new, :watching]) }
+
+  # Returns all signals in this signal's correlation group (the primary + all linked signals).
+  #
+  # @return [Array<TrendSignal>]
+  def correlation_group
+    primary = correlated_signal_id.present? ? correlated_primary : self
+    [primary] + primary.correlated_signals.where.not(id: primary.id).to_a
+  end
 end

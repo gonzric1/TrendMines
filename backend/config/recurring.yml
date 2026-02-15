@@ -21,3 +21,7 @@ production:
   signal_scan:
     class: SignalScanJob
     schedule: every hour
+
+  signal_processing:
+    class: SignalProcessingJob
+    schedule: every 2 hours at minute 30

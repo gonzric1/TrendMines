@@ -12,7 +12,6 @@ class SignalScanJob < ApplicationJob
   SOURCE_MAP = {
     "reddit" => "Sources::Reddit",
     "tumblr" => "Sources::Tumblr",
-    "ao3" => "Sources::FandomStats",
     "google_trends" => "Sources::GoogleTrends"
   }.freeze
 
@@ -36,6 +35,9 @@ class SignalScanJob < ApplicationJob
       Rails.logger.error(e.backtrace.first(5).join("\n"))
       next
     end
+
+    # Enqueue post-scan processing (enrichment, correlation, promotion, token extraction)
+    SignalProcessingJob.perform_later
   end
 
   private

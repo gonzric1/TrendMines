@@ -16,69 +16,10 @@ module Sources
       []
     end
 
-    # Broad fandom tags to discover from (no user input needed).
-    # These are large umbrella tags that reveal which sub-fandoms are active.
-    DISCOVERY_TAGS = [
-      "Marvel", "DC Comics", "Harry Potter", "Good Omens",
-      "Sherlock Holmes", "Doctor Who", "Star Wars", "Star Trek",
-      "Supernatural", "The Witcher", "Genshin Impact", "Hades",
-      "Baldur's Gate", "Dungeon Meshi", "Frieren", "Jujutsu Kaisen",
-      "My Hero Academia", "Chainsaw Man", "Spy x Family",
-      "One Piece", "Naruto", "Attack on Titan"
-    ].freeze
-
-    # Discovers trending fandoms by scanning broad AO3 tags and extracting
-    # which sub-fandoms have the most active communities.
-    # No input needed — uses built-in tag list.
-    #
-    # @return [Array<Hash>] Signal results for active AO3 fandoms
+    # Discovery disabled — FandomStats is used for enrichment only.
+    # Signals are discovered by Reddit, Tumblr, and Google Trends.
     def discover
-      results = []
-
-      DISCOVERY_TAGS.each do |tag|
-        data = fetch_tag_stats(tag)
-        next unless data
-        next if data.key?("message")
-
-        stats = data["stats"] || {}
-        fandom_counts = stats["fandom"] || {}
-
-        # Each sub-fandom with significant works is a potential signal
-        fandom_counts.each do |fandom_name, count|
-          next if count < 500 # Skip tiny fandoms
-
-          category_counts = stats["category"] || {}
-          relationship_counts = stats["relationship"] || {}
-          freeform_counts = stats["freeform"] || {}
-
-          shipping_count = (category_counts["M/M"] || 0) + (category_counts["F/F"] || 0)
-          gen_count = category_counts["Gen"] || 0
-
-          momentum = calculate_momentum(count, shipping_count, gen_count, freeform_counts)
-          next if momentum <= 2.0
-
-          results << build_result(
-            source: SOURCE_NAME,
-            topic: fandom_name,
-            description: "AO3: #{count} works in #{fandom_name}",
-            momentum_score: momentum,
-            raw_data: {
-              ao3_works: count,
-              parent_tag: tag,
-              shipping_ratio: (shipping_count + gen_count) > 0 ? (shipping_count.to_f / (shipping_count + gen_count)).round(3) : 0,
-              top_relationships: relationship_counts.first(3).to_h
-            }
-          )
-        end
-      rescue => e
-        Rails.logger.warn("FandomStats discover error for '#{tag}': #{e.message}")
-        next
-      end
-
-      # Deduplicate by fandom name, keeping highest momentum
-      results
-        .group_by { |r| r[:topic].downcase.strip }
-        .map { |_key, group| group.max_by { |r| r[:momentum_score] } }
+      []
     end
 
     # Scans fandom tags for work counts and engagement breakdowns.

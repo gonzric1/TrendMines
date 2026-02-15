@@ -29,11 +29,12 @@ interface SettingsResponse {
   scoring: SettingItem[]
   alerts: SettingItem[]
   templates: SettingItem[]
+  ai: SettingItem[]
   integrations: SettingItem[]
   api_keys: ApiKeyItem[]
 }
 
-type CategoryKey = 'scanning' | 'scoring' | 'alerts' | 'templates' | 'integrations' | 'api_keys'
+type CategoryKey = 'scanning' | 'scoring' | 'alerts' | 'templates' | 'ai' | 'integrations' | 'api_keys'
 
 const CATEGORY_INFO: Record<CategoryKey, { title: string; description: string }> = {
   scanning: {
@@ -52,6 +53,10 @@ const CATEGORY_INFO: Record<CategoryKey, { title: string; description: string }>
     title: 'Templates',
     description: 'Customize prompt and listing templates',
   },
+  ai: {
+    title: 'AI Models',
+    description: 'Configure AI model selection for automated pipeline tasks. Uses OpenRouter API.',
+  },
   integrations: {
     title: 'Integrations',
     description: 'Configure webhook URLs and external service connections',
@@ -67,6 +72,7 @@ const CATEGORY_ORDER: CategoryKey[] = [
   'scoring',
   'alerts',
   'templates',
+  'ai',
   'integrations',
   'api_keys',
 ]
@@ -76,9 +82,10 @@ const SERVICE_GROUP_LABELS: Record<string, string> = {
   tumblr: 'Tumblr',
   google_trends: 'Google Trends (SerpAPI)',
   gemini: 'Google Gemini',
+  openrouter: 'OpenRouter AI',
 }
 
-const SERVICE_GROUP_ORDER = ['reddit', 'tumblr', 'google_trends', 'gemini']
+const SERVICE_GROUP_ORDER = ['reddit', 'tumblr', 'google_trends', 'gemini', 'openrouter']
 
 function getInputType(key: string): 'integer' | 'float' | 'text' | 'textarea' {
   if (key.startsWith('scanning.')) return 'integer'
@@ -88,6 +95,7 @@ function getInputType(key: string): 'integer' | 'float' | 'text' | 'textarea' {
   }
   if (key.startsWith('alerts.')) return 'float'
   if (key.startsWith('templates.')) return 'textarea'
+  if (key.startsWith('ai.')) return 'text'
   return 'text'
 }
 

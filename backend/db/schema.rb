@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_14_230000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_15_060000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -168,6 +168,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_14_230000) do
   end
 
   create_table "trend_signals", force: :cascade do |t|
+    t.integer "correlated_signal_id"
     t.datetime "created_at", null: false
     t.text "description"
     t.datetime "first_seen"
@@ -178,6 +179,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_14_230000) do
     t.string "status"
     t.string "topic"
     t.datetime "updated_at", null: false
+    t.index ["correlated_signal_id"], name: "index_trend_signals_on_correlated_signal_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -219,4 +221,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_14_230000) do
   add_foreign_key "printer_assignments", "products"
   add_foreign_key "products", "designs"
   add_foreign_key "signal_snapshots", "trend_signals"
+  add_foreign_key "trend_signals", "trend_signals", column: "correlated_signal_id"
 end

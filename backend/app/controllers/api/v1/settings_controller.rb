@@ -118,6 +118,19 @@ module Api
       def test_connection
         service = params[:service].to_s
 
+        if service == "openrouter"
+          client = Ai::OpenRouterClient.new
+          unless client.configured?
+            render json: { success: false, message: "OpenRouter API key not configured", service: service }
+            return
+          end
+
+          response = client.complete(prompt: "Reply with only: OK", system: "You are a test endpoint. Reply with only: OK", temperature: 0)
+          model = client.resolve_model
+          render json: { success: true, message: "Connected to OpenRouter (model: #{model})", service: service }
+          return
+        end
+
         class_name = SOURCE_SERVICE_MAP[service]
         unless class_name
           render json: { success: false, message: "Unknown service: #{service}", service: service }
@@ -147,7 +160,8 @@ module Api
         "reddit_client_secret" => { description: "Reddit OAuth Client Secret", group: "reddit" },
         "tumblr_consumer_key" => { description: "Tumblr Consumer Key", group: "tumblr" },
         "serpapi_api_key" => { description: "SerpAPI Key (Google Trends)", group: "google_trends" },
-        "gemini_api_key" => { description: "Google Gemini API Key", group: "gemini" }
+        "gemini_api_key" => { description: "Google Gemini API Key", group: "gemini" },
+        "openrouter_api_key" => { description: "OpenRouter API Key", group: "openrouter" }
       }.freeze
 
       # Maps service group names to their source service class names (constantized at runtime).
@@ -157,7 +171,8 @@ module Api
         "google_trends" => "Sources::GoogleTrends",
         "gemini" => "Sources::GoogleTrends",
         "ao3" => "Sources::FandomStats",
-        "tiktok" => "Sources::Tiktok"
+        "tiktok" => "Sources::Tiktok",
+        "openrouter" => "Ai::OpenRouterClient"
       }.freeze
 
       # 3-tier lookup: Settings DB (decrypted) -> Rails credentials -> ENV

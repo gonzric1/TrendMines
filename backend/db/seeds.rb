@@ -179,6 +179,15 @@ puts "Creating settings..."
   { key: "integrations.background_job_queue", value: "default", category: "integrations", description: "Background job queue name" },
   { key: "integrations.enable_auto_listing", value: false, category: "integrations", description: "Enable automatic listing creation" },
   { key: "integrations.max_concurrent_designs", value: 5, category: "integrations", description: "Max concurrent design generation jobs" },
+
+  # AI model settings
+  { key: "ai.default_model", value: "google/gemini-2.5-flash", category: "ai", description: "Default AI model (OpenRouter model ID)" },
+  { key: "ai.token_extraction_model", value: "", category: "ai", description: "Model for cultural token extraction (blank = use default)" },
+  { key: "ai.cross_correlation_model", value: "", category: "ai", description: "Model for cross-source correlation (blank = use default)" },
+  { key: "ai.ao3_tag_mapping_model", value: "", category: "ai", description: "Model for AO3 tag mapping (blank = use default)" },
+
+  # Auto-promotion settings
+  { key: "scoring.auto_promote_min_age_days", value: 2, category: "scoring", description: "Minimum signal age in days before auto-promotion" },
 ].each do |attrs|
   Setting.create!(attrs)
 end
