@@ -29,12 +29,8 @@ module Api
 
         # Fall back to user authentication (JWT/session)
         # Attempt to authenticate with JWT or session
-        begin
-          @current_user = warden.authenticate(scope: :user)
-          return if @current_user
-        rescue StandardError => e
-          Rails.logger.debug "User authentication failed: #{e.message}"
-        end
+        @current_user = warden.authenticate(scope: :user)
+        return if @current_user
 
         # Neither auth method succeeded
         render json: { error: "Unauthorized" }, status: :unauthorized

@@ -1,5 +1,4 @@
 import { useDroppable } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { cn } from '@/lib/utils'
 import type { Niche, NicheStatus } from '@/types/niche'
 import { STATUS_LABELS, STATUS_COLORS, STATUS_BG_COLORS } from '@/types/niche'
@@ -34,14 +33,9 @@ export function KanbanColumn({ status, niches, onNicheClick }: KanbanColumnProps
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-[200px]">
-        <SortableContext
-          items={niches.map((n) => n.id)}
-          strategy={verticalListSortingStrategy}
-        >
           {niches.map((niche) => (
             <NicheCard key={niche.id} niche={niche} onClick={onNicheClick} />
           ))}
-        </SortableContext>
 
         {niches.length === 0 && (
           <div className="flex items-center justify-center h-20 text-xs text-muted-foreground">

@@ -246,8 +246,6 @@ Listing
 ### Planned Features
 - **ActiveStorage**: Image storage with S3-compatible backends
 - **Multi-marketplace**: Expand beyond Etsy to Amazon, Redbubble, etc.
-- **Analytics API**: Aggregated metrics across listings
-- **Settings API**: User preferences and configuration
 - **Webhook support**: Real-time notifications for OpenClaw
 
 ### Technical Debt

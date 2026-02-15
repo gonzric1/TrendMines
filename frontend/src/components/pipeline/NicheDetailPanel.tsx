@@ -51,7 +51,7 @@ export function NicheDetailPanel({ niche, onClose }: NicheDetailPanelProps) {
     return () => {
       cancelled = true
     }
-  }, [niche])
+  }, [niche?.id])
 
   return (
     <div

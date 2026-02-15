@@ -12,7 +12,7 @@ export default function PipelinePage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedNiche, setSelectedNiche] = useState<Niche | null>(null)
 
-  const fetchNiches = async () => {
+  const fetchNiches = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -26,11 +26,11 @@ export default function PipelinePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchNiches()
-  }, [])
+  }, [fetchNiches])
 
   const handleStatusChange = useCallback(
     async (nicheId: number, newStatus: NicheStatus) => {
@@ -52,7 +52,7 @@ export default function PipelinePage() {
         fetchNiches()
       }
     },
-    []
+    [fetchNiches]
   )
 
   const handleNicheClick = useCallback((niche: Niche) => {

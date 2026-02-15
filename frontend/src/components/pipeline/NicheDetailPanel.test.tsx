@@ -41,30 +41,42 @@ describe('NicheDetailPanel', () => {
     expect(panel.className).toContain('translate-x-full')
   })
 
-  it('is visible when a niche is selected', () => {
+  it('is visible when a niche is selected', async () => {
     vi.mocked(api.get).mockResolvedValue({ data: {} })
 
     render(<NicheDetailPanel niche={mockNiche} onClose={vi.fn()} />)
 
     const panel = screen.getByTestId('niche-detail-panel')
     expect(panel.className).toContain('translate-x-0')
+
+    await waitFor(() => {
+      expect(api.get).toHaveBeenCalled()
+    })
   })
 
-  it('displays niche name and status', () => {
+  it('displays niche name and status', async () => {
     vi.mocked(api.get).mockResolvedValue({ data: {} })
 
     render(<NicheDetailPanel niche={mockNiche} onClose={vi.fn()} />)
 
     expect(screen.getByText('Cottagecore Fashion')).toBeInTheDocument()
     expect(screen.getByText('Evaluating')).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(api.get).toHaveBeenCalled()
+    })
   })
 
-  it('displays niche description', () => {
+  it('displays niche description', async () => {
     vi.mocked(api.get).mockResolvedValue({ data: {} })
 
     render(<NicheDetailPanel niche={mockNiche} onClose={vi.fn()} />)
 
     expect(screen.getByText('A cozy aesthetic niche')).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(api.get).toHaveBeenCalled()
+    })
   })
 
   it('calls onClose when close button is clicked', async () => {

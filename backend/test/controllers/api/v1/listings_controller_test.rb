@@ -146,12 +146,52 @@ module Api
         assert_not_nil json['data']
       end
 
-      test "should get leaderboard" do
+      test "should get leaderboard with default params" do
         get leaderboard_api_v1_listings_url, headers: @headers
         assert_response :success
 
         json = JSON.parse(response.body)
-        assert json['message'].present?
+        assert_not_nil json['data']
+        assert_not_nil json['meta']
+        assert_equal 'revenue', json['meta']['sort_by']
+        assert_equal '30d', json['meta']['period']
+
+        json['data'].each_with_index do |entry, idx|
+          assert entry['listing_id'].present?
+          assert entry['title'].present?
+          assert_equal idx + 1, entry['rank']
+          assert_includes %w[up down stable], entry['trend']
+        end
+      end
+
+      test "should get leaderboard sorted by sales" do
+        get leaderboard_api_v1_listings_url(sort_by: 'sales'), headers: @headers
+        assert_response :success
+
+        json = JSON.parse(response.body)
+        assert_equal 'sales', json['meta']['sort_by']
+
+        # Verify sorted descending
+        sales_values = json['data'].map { |e| e['sales'] }
+        assert_equal sales_values.sort.reverse, sales_values
+      end
+
+      test "should reject invalid sort_by" do
+        get leaderboard_api_v1_listings_url(sort_by: 'invalid'), headers: @headers
+        assert_response :bad_request
+      end
+
+      test "should reject invalid period" do
+        get leaderboard_api_v1_listings_url(period: 'invalid'), headers: @headers
+        assert_response :bad_request
+      end
+
+      test "should respect limit param" do
+        get leaderboard_api_v1_listings_url(limit: 1), headers: @headers
+        assert_response :success
+
+        json = JSON.parse(response.body)
+        assert json['data'].size <= 1
       end
     end
   end

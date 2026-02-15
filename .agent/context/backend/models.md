@@ -13,6 +13,7 @@ erDiagram
     PRODUCT ||--o{ LISTING : "listed as"
     PRODUCT ||--o{ PRINTER_ASSIGNMENT : "allocated to"
     LISTING ||--o{ METRIC_SNAPSHOT : "tracked by"
+    TREND_SIGNAL ||--o{ SIGNAL_SNAPSHOT : "tracked by"
     USER ||--o{ JWT_DENYLIST : "revokes tokens"
 
     TREND_SIGNAL {
@@ -111,6 +112,22 @@ erDiagram
         datetime captured_at
     }
 
+    SIGNAL_SNAPSHOT {
+        int id PK
+        int trend_signal_id FK
+        float momentum_score
+        json source_metrics
+        datetime captured_at
+    }
+
+    SETTING {
+        int id PK
+        string key
+        json value
+        string category
+        text description
+    }
+
     USER {
         int id PK
         string email
@@ -166,6 +183,7 @@ enum :status, {
 ### Associations
 
 - `has_many :niches` - Signals can be promoted to multiple niches over time
+- `has_many :signal_snapshots` - Historical momentum snapshots
 
 ### Scopes
 
@@ -574,6 +592,67 @@ listing.metric_snapshots
 
 ---
 
+## SignalSnapshot
+
+**File:** `app/models/signal_snapshot.rb`
+
+Represents a point-in-time snapshot of trend signal momentum. Snapshots are captured periodically to track momentum velocity and source metrics over time, powering sparkline charts in the Signal Radar.
+
+### Attributes
+
+- `trend_signal_id` (integer, required, FK) - Parent trend signal
+- `momentum_score` (float) - Momentum velocity at capture time
+- `source_metrics` (json) - Platform-specific metrics at capture time
+- `captured_at` (datetime, required) - When this snapshot was captured
+
+### Associations
+
+- `belongs_to :trend_signal` - Parent signal
+
+### Scopes
+
+- `.recent` - Sorted by captured_at DESC
+- `.for_period(start_date, end_date)` - Snapshots within date range
+
+---
+
+## Setting
+
+**File:** `app/models/setting.rb`
+
+Stores application configuration values for scanning, scoring, alerts, templates, and integrations. API keys are managed via Rails credentials, not this table.
+
+### Attributes
+
+- `key` (string, required, unique) - Dot-notation key (e.g., "scanning.ao3_frequency")
+- `value` (json) - JSON value (numbers, strings, objects)
+- `category` (string, required) - Grouping category
+- `description` (text) - Human-readable explanation
+
+### Categories
+
+`scanning`, `scoring`, `alerts`, `templates`, `integrations`
+
+### Associations
+
+None (standalone configuration store)
+
+### Scopes
+
+- `.by_category(cat)` - Filter by category
+
+### Class Methods
+
+- `.grouped_by_category` - Returns settings grouped by category as a hash
+
+### Validations
+
+- `key` must be present and unique
+- `category` must be present and in CATEGORIES
+- Value validation varies by category (positive integers for scanning, weights 1-10 for scoring, etc.)
+
+---
+
 ## User
 
 **File:** `app/models/user.rb`
@@ -594,9 +673,9 @@ Represents a user account for dashboard access. Managed by Devise with JWT authe
 
 ```ruby
 enum :role, {
-  user: 0,      # Standard user
+  operator: 0,  # Standard operator
   admin: 1      # Full access
-}, default: :user
+}, default: :operator
 ```
 
 ### Devise Modules

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_14_221155) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_14_230000) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -192,6 +192,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_14_221155) do
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+  end
+
+  create_table "webhook_deliveries", force: :cascade do |t|
+    t.integer "attempts", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.string "event_type", null: false
+    t.datetime "last_attempt_at"
+    t.json "payload", null: false
+    t.text "response_body"
+    t.integer "response_code"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.string "url", null: false
+    t.index ["event_type"], name: "index_webhook_deliveries_on_event_type"
+    t.index ["status"], name: "index_webhook_deliveries_on_status"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

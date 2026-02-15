@@ -212,6 +212,7 @@ GET /api/v1/trend_signals
 
 **Query Parameters:**
 - `status` - Filter by status (new, watching, promoted, archived)
+- `source` - Filter by signal source (e.g., twitter, reddit, ao3, tiktok)
 - `sort` - Sort order (allowed: id, topic, source, momentum_score, status, created_at, updated_at)
 - `page`, `per_page` - Pagination
 
@@ -450,6 +451,7 @@ GET /api/v1/designs
 
 **Query Parameters:**
 - `status` - Filter by status (pending_review, approved, rejected, needs_revision)
+- `design_type` - Filter by design type (graphic, pattern, illustration)
 - `sort` - Sort order (allowed: id, design_type, style, status, generation_cost, created_at, updated_at)
 - `page`, `per_page` - Pagination
 
@@ -676,6 +678,48 @@ Returns top-performing listings sorted by revenue or sales.
 
 ---
 
+## Settings API
+
+**Base Path:** `/api/v1/settings`
+
+Manages application configuration settings.
+
+### List Settings
+```http
+GET /api/v1/settings
+```
+
+Returns all settings grouped by category.
+
+### Update Settings
+```http
+PATCH /api/v1/settings
+Content-Type: application/json
+
+{
+  "settings": {
+    "scanning.ao3_frequency": 12,
+    "scoring.momentum_weight": 3
+  }
+}
+```
+
+### Get API Keys
+```http
+GET /api/v1/settings/api_keys
+```
+
+Returns configured API key status (does not expose actual keys).
+
+### Test Connection
+```http
+POST /api/v1/settings/test_connection
+```
+
+Tests external service connectivity.
+
+---
+
 ## Common Patterns
 
 ### Filtering
@@ -702,12 +746,9 @@ All parameters can be combined:
 GET /api/v1/listings?status=active&sort=revenue DESC&page=1&per_page=10
 ```
 
-### Soft Deletes
-DELETE endpoints typically soft delete by setting status to archived:
-```http
-DELETE /api/v1/niches/:id
-# Sets status to 'archived' instead of deleting record
-```
+### Soft vs Hard Deletes
+- **Soft delete** (set status to archived/paused): Niches, TrendSignals, Listings (set to paused)
+- **Hard delete** (record destroyed): Designs, Products, CulturalTokens, Settings
 
 ---
 

@@ -103,12 +103,16 @@ describe('PipelinePage', () => {
       expect(screen.getByTestId('kanban-board')).toBeInTheDocument()
     })
 
-    it('calls API with per_page=100', () => {
+    it('calls API with per_page=100', async () => {
       vi.mocked(api.get).mockResolvedValueOnce({ data: { data: [] } })
 
       render(<PipelinePage />)
 
       expect(api.get).toHaveBeenCalledWith('/niches', { params: { per_page: 100 } })
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading pipeline...')).not.toBeInTheDocument()
+      })
     })
   })
 
@@ -122,6 +126,10 @@ describe('PipelinePage', () => {
       expect(
         screen.getByText('Drag niches between stages to update their pipeline status')
       ).toBeInTheDocument()
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading pipeline...')).not.toBeInTheDocument()
+      })
     })
 
     it('has a Refresh button', async () => {
@@ -130,6 +138,10 @@ describe('PipelinePage', () => {
       render(<PipelinePage />)
 
       expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument()
+
+      await waitFor(() => {
+        expect(screen.queryByText('Loading pipeline...')).not.toBeInTheDocument()
+      })
     })
 
     it('refetches niches on Refresh click', async () => {

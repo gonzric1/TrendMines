@@ -1,4 +1,4 @@
-import { useSortable } from '@dnd-kit/sortable'
+import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils'
 import type { Niche } from '@/types/niche'
@@ -22,16 +22,14 @@ export function NicheCard({ niche, onClick }: NicheCardProps) {
     listeners,
     setNodeRef,
     transform,
-    transition,
     isDragging,
-  } = useSortable({
+  } = useDraggable({
     id: niche.id,
     data: { niche },
   })
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: CSS.Translate.toString(transform),
   }
 
   const days = daysSince(niche.discovered_at)

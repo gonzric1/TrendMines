@@ -156,8 +156,78 @@ module Api
       # @note Not yet implemented - returns placeholder response
       # @example GET /api/v1/listings/leaderboard
       def leaderboard
-        # TODO: Implement leaderboard logic
-        render json: { message: "Leaderboard endpoint - to be implemented" }
+        sort_by = params[:sort_by].presence || "revenue"
+        period = params[:period].presence || "30d"
+        limit = [(params[:limit]&.to_i || 10), 50].min
+
+        unless %w[revenue sales fav_view_ratio views].include?(sort_by)
+          render json: { error: "Invalid sort_by. Allowed: revenue, sales, fav_view_ratio, views" }, status: :bad_request
+          return
+        end
+
+        unless %w[7d 30d 90d all].include?(period)
+          render json: { error: "Invalid period. Allowed: 7d, 30d, 90d, all" }, status: :bad_request
+          return
+        end
+
+        start_date = case period
+                     when "7d" then 7.days.ago
+                     when "30d" then 30.days.ago
+                     when "90d" then 90.days.ago
+                     when "all" then nil
+                     end
+
+        listings = Listing.active.includes(:metric_snapshots)
+
+        ranked = listings.map do |listing|
+          snapshots = listing.metric_snapshots
+          snapshots = snapshots.where("captured_at >= ?", start_date) if start_date
+
+          next nil if snapshots.empty?
+
+          total_revenue = snapshots.sum(&:revenue).to_f
+          total_sales = snapshots.sum(&:sales).to_i
+          total_views = snapshots.sum(&:views).to_i
+          avg_fav_view = snapshots.average(:fav_view_ratio)&.to_f || 0.0
+
+          # Calculate trend direction: compare last half vs first half of snapshots
+          sorted = snapshots.order(:captured_at).to_a
+          mid = sorted.size / 2
+          if mid > 0 && sort_by != "fav_view_ratio"
+            first_half_val = sorted[0...mid].sum { |s| s.send(sort_by == "fav_view_ratio" ? :fav_view_ratio : sort_by.to_sym).to_f }
+            second_half_val = sorted[mid..].sum { |s| s.send(sort_by == "fav_view_ratio" ? :fav_view_ratio : sort_by.to_sym).to_f }
+            trend = second_half_val > first_half_val ? "up" : (second_half_val < first_half_val ? "down" : "stable")
+          else
+            trend = "stable"
+          end
+
+          {
+            listing_id: listing.id,
+            title: listing.title,
+            status: listing.status,
+            price: listing.price.to_f,
+            revenue: total_revenue,
+            sales: total_sales,
+            views: total_views,
+            fav_view_ratio: avg_fav_view.round(4),
+            trend: trend
+          }
+        end.compact
+
+        sort_key = sort_by.to_sym
+        ranked.sort_by! { |r| -r[sort_key].to_f }
+
+        # Add rank
+        ranked.each_with_index { |r, i| r[:rank] = i + 1 }
+
+        render json: {
+          data: ranked.first(limit),
+          meta: {
+            sort_by: sort_by,
+            period: period,
+            total: ranked.size
+          }
+        }
       end
 
       private

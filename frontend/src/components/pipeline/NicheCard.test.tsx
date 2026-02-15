@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { DndContext } from '@dnd-kit/core'
-import { SortableContext } from '@dnd-kit/sortable'
 import type { Niche } from '@/types/niche'
 import { NicheCard } from './NicheCard'
 
@@ -25,9 +24,7 @@ const mockNiche: Niche = {
 
 function renderWithDnd(ui: React.ReactElement) {
   return render(
-    <DndContext>
-      <SortableContext items={[mockNiche.id]}>{ui}</SortableContext>
-    </DndContext>
+    <DndContext>{ui}</DndContext>
   )
 }
 
