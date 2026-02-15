@@ -7,14 +7,23 @@ module Sources
   # Provides 3-tier credential lookup, HTTP helpers, and a common interface.
   #
   # Subclasses must implement:
-  #   #scan(topics:)     -> Array of result hashes
-  #   #test_connection   -> { success: Boolean, message: String }
-  #   #credential_keys   -> Array of required credential key names
+  #   #discover           -> Array of result hashes (find NEW trends, no input needed)
+  #   #scan(topics:)      -> Array of result hashes (monitor known topics)
+  #   #test_connection    -> { success: Boolean, message: String }
+  #   #credential_keys    -> Array of required credential key names
   class Base
     CONNECT_TIMEOUT = 15
     READ_TIMEOUT = 30
 
-    # Scans external source for trend data on the given topics.
+    # Discovers new trending topics from this source. No input required.
+    # This is the primary method — it finds trends the user doesn't know about yet.
+    #
+    # @return [Array<Hash>] Array of signal result hashes
+    def discover
+      []
+    end
+
+    # Scans external source for trend data on known topics (monitoring mode).
     #
     # @param topics [Array<String>] Topics to search for
     # @return [Array<Hash>] Array of signal result hashes

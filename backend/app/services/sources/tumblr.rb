@@ -8,6 +8,7 @@ module Sources
     SOURCE_NAME = "Tumblr"
 
     # Purchase-intent phrases that indicate commercial potential
+    # Purchase-intent phrases that indicate commercial potential
     WISH_PHRASES = [
       "i need this", "i want this", "shut up and take my money",
       "where can i buy", "someone make this", "i would buy",
@@ -15,8 +16,41 @@ module Sources
       "wish i had", "somebody please make"
     ].freeze
 
+    # Broad tags to crawl for trend discovery (no user input needed)
+    DISCOVERY_TAGS = %w[
+      fandom fanart fan+art fan+merch fandom+merch
+      anime+art manga+art cosplay bookish booktok
+      fanfiction shipping fangirl cottagecore dark+academia
+      sticker+art print+art illustration artist+on+tumblr
+    ].freeze
+
     def credential_keys
       %w[tumblr_consumer_key]
+    end
+
+    # Discovers trending fandom/merch content from broad Tumblr tags.
+    # No input needed — scans popular fandom tags and extracts high-engagement topics.
+    #
+    # @return [Array<Hash>] Signal results discovered from Tumblr
+    def discover
+      return [] unless configured?
+
+      api_key = credential("tumblr_consumer_key")
+      results = []
+
+      DISCOVERY_TAGS.each do |tag|
+        posts = fetch_tagged_posts(api_key, tag)
+        next if posts.empty?
+
+        # Extract actual fandom/topic names from high-engagement posts
+        topic_signals = extract_topics_from_posts(posts, tag)
+        results.concat(topic_signals)
+      rescue => e
+        Rails.logger.warn("Tumblr discover error for ##{tag}: #{e.message}")
+        next
+      end
+
+      dedupe_results(results)
     end
 
     # Scans Tumblr tags for post activity and purchase-intent signals.
@@ -122,6 +156,57 @@ module Sources
       ].compact.join(" ").downcase
 
       WISH_PHRASES.any? { |phrase| text.include?(phrase) }
+    end
+
+    # Extracts trending topic names from high-engagement posts
+    def extract_topics_from_posts(posts, source_tag)
+      results = []
+
+      high_engagement = posts.select { |p| (p["note_count"] || 0) > 50 }
+      high_engagement.first(10).each do |post|
+        tags = post["tags"] || []
+        notes = post["note_count"] || 0
+
+        # Use the most specific tag (not the broad discovery tag) as the topic
+        specific_tags = tags.reject { |t| DISCOVERY_TAGS.include?(t.tr(" ", "+").downcase) }
+        topic = specific_tags.first
+        next if topic.blank? || topic.length < 3
+
+        wish = contains_wish_phrase?(post) ? 1 : 0
+        velocity = notes / [((Time.current.to_i - (post["timestamp"] || Time.current.to_i)) / 86400.0), 0.01].max
+
+        momentum = calculate_post_discovery_momentum(notes, velocity, wish)
+        next if momentum < 2.0
+
+        results << build_result(
+          source: SOURCE_NAME,
+          topic: topic,
+          description: "Trending on Tumblr ##{source_tag}: #{notes} notes#{wish > 0 ? ", purchase intent detected" : ""}",
+          momentum_score: momentum,
+          raw_data: {
+            discovery_tag: source_tag,
+            post_tags: tags.first(10),
+            note_count: notes,
+            note_velocity: velocity.round(2),
+            has_wish_phrase: wish > 0
+          }
+        )
+      end
+
+      results
+    end
+
+    def calculate_post_discovery_momentum(notes, velocity, wish)
+      engagement = [Math.log10([notes, 1].max) / 0.8, 4.0].min
+      velocity_score = [velocity / 50.0, 3.0].min
+      wish_bonus = wish > 0 ? 2.0 : 0.0
+      (engagement + velocity_score + wish_bonus).round(2)
+    end
+
+    def dedupe_results(results)
+      results
+        .group_by { |r| r[:topic].downcase.strip }
+        .map { |_key, group| group.max_by { |r| r[:momentum_score] } }
     end
 
     def calculate_momentum(post_count, avg_notes, velocity, wish_count)

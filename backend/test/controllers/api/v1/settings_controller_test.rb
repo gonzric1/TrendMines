@@ -238,6 +238,22 @@ module Api
         assert_includes json["message"], "Unknown service"
       end
 
+      # POST /settings/scan_now
+
+      test "scan_now queues signal scan job" do
+        post api_v1_settings_scan_now_url, headers: @headers
+        assert_response :success
+
+        json = JSON.parse(response.body)
+        assert json["queued"]
+        assert_includes json["message"], "Signal scan queued"
+      end
+
+      test "should require authentication for scan_now" do
+        post api_v1_settings_scan_now_url
+        assert_response :unauthorized
+      end
+
       test "test_connection handles tiktok stub" do
         post api_v1_settings_test_connection_url, headers: @headers, params: { service: "tiktok" }, as: :json
         assert_response :success

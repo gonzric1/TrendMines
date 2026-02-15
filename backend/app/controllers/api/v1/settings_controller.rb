@@ -98,6 +98,18 @@ module Api
         render json: { saved: saved_keys }
       end
 
+      # Triggers an immediate signal scan across all configured sources.
+      # Enqueues SignalScanJob asynchronously so the UI doesn't block.
+      #
+      # @return [JSON] { queued: true, message: String }
+      # @example POST /api/v1/settings/scan_now
+      def scan_now
+        SignalScanJob.perform_later
+        render json: { queued: true, message: "Signal scan queued. Results will appear on the Signal Radar." }
+      rescue => e
+        render json: { queued: false, message: "Failed to queue scan: #{e.message}" }, status: :unprocessable_entity
+      end
+
       # Tests connection for a service group by instantiating its source service.
       #
       # @param [String] service Name of the service group to test

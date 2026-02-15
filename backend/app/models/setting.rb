@@ -42,6 +42,7 @@ class Setting < ApplicationRecord
       return
     when "scanning"
       return if key&.end_with?("_last_scan") # ISO8601 timestamps
+      return if key&.end_with?("_topics") # Comma-separated topic strings
       validate_positive_integer
     when "scoring"
       if key&.end_with?("_threshold")

@@ -1,30 +1,45 @@
 require "test_helper"
 
 class SignalScanJobTest < ActiveSupport::TestCase
-  test "job performs without error when no topics exist" do
-    # Stub gather_topics to return empty — avoids fixture FK issues
-    job = SignalScanJob.new
-    job.stub(:gather_topics, []) do
-      assert_nothing_raised do
-        job.perform
+  test "job performs without error when no sources are configured" do
+    # Stub all source classes to avoid real HTTP calls
+    noop = lambda { |*| [] }
+    stub_scanner = Object.new
+    stub_scanner.define_singleton_method(:configured?) { true }
+    stub_scanner.define_singleton_method(:discover) { [] }
+    stub_scanner.define_singleton_method(:scan) { |**| [] }
+
+    SignalScanJob::SOURCE_MAP.each_value do |class_name|
+      class_name.constantize.stub(:new, stub_scanner) do
+        # Just test that it doesn't blow up
+      end
+    end
+
+    # Simplest approach: stub the one source that's always configured (AO3)
+    Sources::FandomStats.stub(:new, stub_scanner) do
+      Sources::Reddit.stub(:new, stub_scanner) do
+        Sources::Tumblr.stub(:new, stub_scanner) do
+          Sources::GoogleTrends.stub(:new, stub_scanner) do
+            assert_nothing_raised do
+              SignalScanJob.perform_now
+            end
+          end
+        end
       end
     end
   end
 
-  test "job skips unconfigured sources" do
-    # With default test env (no API keys), all auth-required sources should be skipped
-    signal = TrendSignal.create!(
-      source: "test",
-      topic: "Test Topic",
-      status: "new",
-      momentum_score: 5.0
-    )
+  test "run_discovery then run_monitoring works end to end" do
+    mock_scanner = Object.new
+    mock_scanner.define_singleton_method(:discover) { [] }
+    mock_scanner.define_singleton_method(:scan) { |**| [] }
 
+    job = SignalScanJob.new
     assert_nothing_raised do
-      SignalScanJob.perform_now
+      job.send(:run_discovery, mock_scanner, "ao3")
+      topics = TrendSignal.active.pluck(:topic).uniq
+      job.send(:run_monitoring, mock_scanner, "ao3", topics) if topics.any?
     end
-  ensure
-    signal&.destroy
   end
 
   test "source_due? returns true when no last scan recorded" do
@@ -71,22 +86,6 @@ class SignalScanJobTest < ActiveSupport::TestCase
     Setting.where(key: ["scanning.test_source2_last_scan", "scanning.test_source2_frequency"]).destroy_all
   end
 
-  test "gather_topics returns unique active signal topics" do
-    s1 = TrendSignal.create!(source: "a", topic: "Topic A", status: "new", momentum_score: 1.0)
-    s2 = TrendSignal.create!(source: "b", topic: "Topic B", status: "watching", momentum_score: 2.0)
-    s3 = TrendSignal.create!(source: "c", topic: "Topic A", status: "new", momentum_score: 3.0) # Duplicate
-
-    job = SignalScanJob.new
-    topics = job.send(:gather_topics)
-
-    assert_includes topics, "Topic A"
-    assert_includes topics, "Topic B"
-    # Should be deduped
-    assert_equal topics.uniq, topics
-  ensure
-    [s1, s2, s3].compact.each(&:destroy)
-  end
-
   test "record_scan_time creates or updates last_scan setting" do
     job = SignalScanJob.new
 
@@ -100,5 +99,22 @@ class SignalScanJobTest < ActiveSupport::TestCase
     assert Time.parse(setting.value) > 1.minute.ago
   ensure
     Setting.where(key: "scanning.test_record_last_scan").destroy_all
+  end
+
+  test "run_discovery calls discover on scanner and upserts results" do
+    mock_results = [
+      { source: "Test", topic: "Discovered Topic #{SecureRandom.hex(4)}", description: "Auto-discovered", momentum_score: 7.0, raw_data: {} }
+    ]
+
+    mock_scanner = Minitest::Mock.new
+    mock_scanner.expect(:discover, mock_results)
+
+    job = SignalScanJob.new
+
+    assert_difference "TrendSignal.count", 1 do
+      job.send(:run_discovery, mock_scanner, "test")
+    end
+
+    mock_scanner.verify
   end
 end

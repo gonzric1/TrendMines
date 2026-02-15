@@ -157,6 +157,8 @@ export default function SettingsPage() {
   const [apiKeySaveError, setApiKeySaveError] = useState<string | null>(null)
   const [testingService, setTestingService] = useState<string | null>(null)
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({})
+  const [scanningNow, setScanningNow] = useState(false)
+  const [scanMessage, setScanMessage] = useState<string | null>(null)
 
   const fetchSettings = async () => {
     try {
@@ -262,6 +264,20 @@ export default function SettingsPage() {
       console.error(err)
     } finally {
       setTestingService(null)
+    }
+  }
+
+  const handleScanNow = async () => {
+    try {
+      setScanningNow(true)
+      setScanMessage(null)
+      const response = await api.post<{ queued: boolean; message: string }>('/settings/scan_now')
+      setScanMessage(response.data.message)
+    } catch (err) {
+      setScanMessage('Failed to trigger scan.')
+      console.error(err)
+    } finally {
+      setScanningNow(false)
     }
   }
 
@@ -414,18 +430,30 @@ export default function SettingsPage() {
                       })}
                     </div>
 
-                    <div className="mt-6 flex items-center gap-3">
+                    <Separator className="mt-6 mb-4" />
+
+                    <div className="flex items-center gap-3 flex-wrap">
                       <Button
                         onClick={handleSaveApiKeys}
                         disabled={!hasApiKeyChanges || savingApiKeys}
                       >
                         {savingApiKeys ? 'Saving...' : 'Save API Keys'}
                       </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={handleScanNow}
+                        disabled={scanningNow}
+                      >
+                        {scanningNow ? 'Starting...' : 'Scan Now'}
+                      </Button>
                       {apiKeySaveMessage && (
                         <p className="text-sm text-green-700 dark:text-green-400">{apiKeySaveMessage}</p>
                       )}
                       {apiKeySaveError && (
                         <p className="text-sm text-destructive">{apiKeySaveError}</p>
+                      )}
+                      {scanMessage && (
+                        <p className="text-sm text-muted-foreground">{scanMessage}</p>
                       )}
                     </div>
                   </CardContent>

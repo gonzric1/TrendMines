@@ -1,6 +1,9 @@
 # Background job that scans all configured external sources for trend signals.
-# Runs hourly via Solid Queue recurring schedule. Checks each source's
-# last scan time against its configured frequency before scanning.
+# Runs hourly via Solid Queue recurring schedule.
+#
+# Two modes per source:
+#   1. Discovery — find NEW trends automatically (no input needed)
+#   2. Monitoring — re-check topics from existing active TrendSignals
 class SignalScanJob < ApplicationJob
   queue_as :default
 
@@ -14,16 +17,20 @@ class SignalScanJob < ApplicationJob
   }.freeze
 
   def perform
-    topics = gather_topics
-    return if topics.empty?
-
     SOURCE_MAP.each do |source_name, class_name|
       next unless source_due?(source_name)
 
       scanner = class_name.constantize.new
       next unless scanner.configured?
 
-      scan_source(scanner, source_name, topics)
+      # Phase 1: Discovery — find new trends (no topics needed)
+      run_discovery(scanner, source_name)
+
+      # Phase 2: Monitoring — re-check known active topics
+      topics = TrendSignal.active.pluck(:topic).uniq
+      run_monitoring(scanner, source_name, topics) if topics.any?
+
+      record_scan_time(source_name)
     rescue => e
       Rails.logger.error("SignalScanJob error for #{source_name}: #{e.message}")
       Rails.logger.error(e.backtrace.first(5).join("\n"))
@@ -33,19 +40,26 @@ class SignalScanJob < ApplicationJob
 
   private
 
-  # Collects topics from active signals plus any configured default topics.
-  def gather_topics
-    topics = TrendSignal.active.pluck(:topic).uniq
+  def run_discovery(scanner, source_name)
+    Rails.logger.info("SignalScanJob: discovering from #{source_name}")
 
-    # Add default topics from scanning settings if configured
-    defaults = Setting.find_by(key: "scanning.default_topics")
-    if defaults&.value.is_a?(Array)
-      topics.concat(defaults.value)
-    elsif defaults&.value.is_a?(String) && defaults.value.present?
-      topics.concat(defaults.value.split(",").map(&:strip))
-    end
+    results = scanner.discover
+    upserted = Sources::SignalUpsert.call(results)
 
-    topics.uniq.compact_blank
+    Rails.logger.info("SignalScanJob: #{source_name} discovered #{results.length} signals, upserted #{upserted}")
+  rescue => e
+    Rails.logger.error("SignalScanJob discovery error for #{source_name}: #{e.message}")
+  end
+
+  def run_monitoring(scanner, source_name, topics)
+    Rails.logger.info("SignalScanJob: monitoring #{topics.length} topics from #{source_name}")
+
+    results = scanner.scan(topics: topics)
+    upserted = Sources::SignalUpsert.call(results)
+
+    Rails.logger.info("SignalScanJob: #{source_name} monitored #{results.length} results, upserted #{upserted}")
+  rescue => e
+    Rails.logger.error("SignalScanJob monitoring error for #{source_name}: #{e.message}")
   end
 
   # Checks if a source is due for scanning based on its frequency and last scan time.
@@ -63,19 +77,6 @@ class SignalScanJob < ApplicationJob
     Time.current >= last_scan + frequency_hours.hours
   rescue ArgumentError
     true # Invalid timestamp = scan now
-  end
-
-  # Runs a single source scan and records results + scan time.
-  def scan_source(scanner, source_name, topics)
-    Rails.logger.info("SignalScanJob: scanning #{source_name} (#{topics.length} topics)")
-
-    results = scanner.scan(topics: topics)
-    upserted = Sources::SignalUpsert.call(results)
-
-    Rails.logger.info("SignalScanJob: #{source_name} returned #{results.length} results, upserted #{upserted}")
-
-    # Record scan time
-    record_scan_time(source_name)
   end
 
   def record_scan_time(source_name)
